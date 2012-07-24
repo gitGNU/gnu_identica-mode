@@ -24,7 +24,7 @@
 ;;
 
 
-(require 'identica-mode)
+;;(require 'identica-mode)
 
 (defvar identica-mode-map (make-sparse-keymap "Identi.ca"))
 (defvar menu-bar-identica-mode-menu nil)
@@ -53,14 +53,70 @@
       ["Leave this group" identica-group-leave t]
       )))
 
+
+(defvar identica-mode-syntax-table nil "")
+
+(if identica-mode-syntax-table
+    ()
+  (setq identica-mode-syntax-table (make-syntax-table))
+  ;; (modify-syntax-entry ?  "" identica-mode-syntax-table)
+  (modify-syntax-entry ?\" "w"  identica-mode-syntax-table))
+
+(if identica-mode-map
+    (let ((km identica-mode-map))
+      (define-key km "\C-c\C-f" 'identica-friends-timeline)
+      ;;      (define-key km "\C-c\C-i" 'identica-direct-messages-timeline)
+      (define-key km "\C-c\C-r" 'identica-replies-timeline)
+      (define-key km "\C-c\C-a" 'identica-public-timeline)
+      (define-key km "\C-c\C-g" 'identica-group-timeline)
+      ;;      (define-ley km "\C-c\C-j" 'identica-group-join)
+      ;;      (define-ley km "\C-c\C-l" 'identica-group-leave)
+      (define-key km "\C-c\C-t" 'identica-tag-timeline)
+      (define-key km "\C-c\C-k" 'identica-stop)
+      (define-key km "\C-c\C-u" 'identica-user-timeline)
+      (define-key km "\C-c\C-c" 'identica-conversation-timeline)
+      (define-key km "\C-c\C-o" 'identica-remote-user-timeline)
+      (define-key km "\C-c\C-s" 'identica-update-status-interactive)
+      (define-key km "\C-c\C-d" 'identica-direct-message-interactive)
+      (define-key km "\C-c\C-m" 'identica-redent)
+      (define-key km "\C-c\C-h" 'identica-toggle-highlight)
+      (define-key km "r" 'identica-repeat)
+      (define-key km "F" 'identica-favorite)
+      (define-key km "\C-c\C-e" 'identica-erase-old-statuses)
+      (define-key km "\C-m" 'identica-enter)
+      (define-key km "R" 'identica-reply-to-user)
+      (define-key km "A" 'identica-reply-to-all)
+      (define-key km "\t" 'identica-next-link)
+      (define-key km [backtab] 'identica-prev-link)
+      (define-key km [mouse-1] 'identica-click)
+      (define-key km "\C-c\C-v" 'identica-view-user-page)
+      (define-key km "q" 'bury-buffer)
+      (define-key km "e" 'identica-expand-replace-at-point)
+      (define-key km "j" 'identica-goto-next-status)
+      (define-key km "k" 'identica-goto-previous-status)
+      (define-key km "l" 'forward-char)
+      (define-key km "h" 'backward-char)
+      (define-key km "0" 'beginning-of-line)
+      (define-key km "^" 'beginning-of-line-text)
+      (define-key km "$" 'end-of-line)
+      (define-key km "n" 'identica-goto-next-status-of-user)
+      (define-key km "p" 'identica-goto-previous-status-of-user)
+      (define-key km [backspace] 'scroll-down)
+      (define-key km " " 'scroll-up)
+      (define-key km "G" 'end-of-buffer)
+      (define-key km "g" 'identica-current-timeline)
+      (define-key km "H" 'beginning-of-buffer)
+      (define-key km "i" 'identica-icon-mode)
+      (define-key km "s" 'identica-scroll-mode)
+      (define-key km "t" 'identica-toggle-proxy)
+      (define-key km "\C-k" 'identica-delete-notice)
+      (define-key km "\C-c\C-p" 'identica-toggle-proxy)
+      nil))
+
 (defun identica-mode ()
   "Major mode for Identica."
   (interactive)
-  (identica-autoload-oauth)
-  (switch-to-buffer (identica-buffer))
   (buffer-disable-undo (identica-buffer))
-  (kill-all-local-variables)
-  (identica-mode-init-variables)
   (use-local-map identica-mode-map)
   (setq major-mode 'identica-mode)
   (setq mode-name identica-mode-string)
@@ -75,70 +131,40 @@
           (visual-line-mode t)
 	(if (fboundp 'longlines-mode)
 	    (longlines-mode t))))
-  (identica-retrieve-configuration) 
   (add-hook 'kill-buffer-hook 'identica-kill-buffer-function)
   (run-mode-hooks 'identica-mode-hook))
 
 
-(defun identica-mode-init-variables ()
-  ;; (make-variable-buffer-local 'variable)
-  ;; (setq variable nil)
-  (make-variable-buffer-local 'identica-active-mode)
-  (set-default 'identica-active-mode t)
-  (font-lock-mode -1)
-  (defface identica-username-face
-    `((t nil)) "" :group 'faces)
-  (set-face-attribute 'identica-username-face nil :underline t)
+(defgroup identica-mode-faces nil
+  "Identica mode Faces"
+  :tag "Identica Mode Faces"
+  :group 'identica-mode
+  :group 'faces
+  )
 
-  (defface identica-reply-face
-    `((t nil)) "" :group 'faces)
-  (set-face-attribute 'identica-reply-face nil :background "DarkSlateGray")
+(defface identica-username-face
+  `((t nil)) "" :group 'identica-mode-faces)
+(set-face-attribute 'identica-username-face nil :underline t)
 
-  (defface identica-stripe-face
-    `((t nil)) "" :group 'faces)
-  (set-face-attribute 'identica-stripe-face nil :background "LightSlateGray")
+(defface identica-reply-face
+  `((t nil)) "" :group 'identica-mode-faces)
+(set-face-attribute 'identica-reply-face nil :background "DarkSlateGray")
 
-  (defface identica-highlight-face
-    `((t nil)) "" :group 'faces)
-  (set-face-attribute 'identica-highlight-face nil :background "SlateGray")
+(defface identica-stripe-face
+  `((t nil)) "" :group 'identica-mode-faces)
+(set-face-attribute 'identica-stripe-face nil :background "LightSlateGray")
 
-  (defface identica-uri-face
-    `((t nil)) "" :group 'faces)
-  (set-face-attribute 'identica-uri-face nil :underline t)
+(defface identica-highlight-face
+  `((t nil)) "" :group 'identica-mode-faces)
+(set-face-attribute 'identica-highlight-face nil :background "SlateGray")
 
-  (defface identica-heart-face
-    `((t nil)) "" :group 'faces)
-  (set-face-attribute 'identica-heart-face nil :foreground "firebrick1" :height 2.0)  
+(defface identica-uri-face
+  `((t nil)) "" :group 'identica-mode-faces)
+(set-face-attribute 'identica-uri-face nil :underline t)
 
-  (add-to-list 'minor-mode-alist '(identica-icon-mode " id-icon"))
-  (add-to-list 'minor-mode-alist '(identica-scroll-mode " id-scroll"))
-
-  ;; make face properties nonsticky
-  (nconc text-property-default-nonsticky
-	 '((face . t)(mouse-face . t)(uri . t)(source . t)(uri-in-text . t)))
-
-  ;; Create an account object based on the various custom variables.
-  ;; Insert it into the statusnet accounts list.
-  (setq statusnet-accounts
-	(cons (make-statusnet-account
-	       :server statusnet-server
-	       :port statusnet-port
-	       :username identica-username
-	       :auth-mode identica-auth-mode
-	       :password identica-password
-	       :textlimit statusnet-server-textlimit
-	       :oauth-data (if (string= identica-auth-mode "oauth")
-			       (make-statusnet-oauth-data
-				:consumer-key identica-mode-oauth-consumer-key
-				:consumer-secret identica-mode-oauth-consumer-secret
-				:request-url statusnet-request-url
-				:access-url statusnet-access-url
-				:authorize-url statusnet-authorize-url
-				:access-token nil)
-			     nil)
-	       :last-timeline-retrieved nil)
-	      statusnet-accounts))
-  (setq sn-current-account (car statusnet-accounts)))
+(defface identica-heart-face
+  `((t nil)) "" :group 'identica-mode-faces)
+(set-face-attribute 'identica-heart-face nil :foreground "firebrick1" :height 2.0)  
 
 
 ;; Icons
@@ -221,5 +247,7 @@ static char * statusnet_off_xpm[] = {
 \"    ............\",
 \"       .      ..\"};")))
 
-
+(defun identica-update-mode-line ()
+  "Update mode line."
+  (force-mode-line-update))
 
