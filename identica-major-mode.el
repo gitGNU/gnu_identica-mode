@@ -142,6 +142,12 @@
   :group 'faces
   )
 
+(defvar identica-username-face 'identica-username-face)
+(defvar identica-uri-face 'identica-uri-face)
+(defvar identica-reply-face 'identica-reply-face)
+(defvar identica-stripe-face 'identica-stripe-face)
+(defvar identica-highlight-face 'identica-highlight-face)
+
 (defface identica-username-face
   `((t nil)) "" :group 'identica-mode-faces)
 (set-face-attribute 'identica-username-face nil :underline t)
@@ -251,3 +257,21 @@ static char * statusnet_off_xpm[] = {
   "Update mode line."
   (force-mode-line-update))
 
+(let ((props
+       (when (display-mouse-p)
+	 `(local-map
+	   ,(purecopy (make-mode-line-mouse-map
+		       'mouse-2 #'identica-toggle-activate-buffer))
+	   help-echo "mouse-2 toggles automatic updates"))))
+  (defconst identica-modeline-active
+    (if identica-active-indicator-image
+	(apply 'propertize " "
+	       `(display ,identica-active-indicator-image ,@props))
+      " "))
+  (defconst identica-modeline-inactive
+    (if identica-inactive-indicator-image
+	(apply 'propertize "INACTIVE"
+	       `(display ,identica-inactive-indicator-image ,@props))
+      "INACTIVE")))
+
+(provide 'identica-major-mode)

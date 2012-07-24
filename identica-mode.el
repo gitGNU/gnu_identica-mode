@@ -401,12 +401,6 @@ of identica-stripe-face."
   :type 'boolean
   :group 'identica-mode)
 
-(defvar identica-username-face 'identica-username-face)
-(defvar identica-uri-face 'identica-uri-face)
-(defvar identica-reply-face 'identica-reply-face)
-(defvar identica-stripe-face 'identica-stripe-face)
-(defvar identica-highlight-face 'identica-highlight-face)
-
 ;;; Proxy
 (defvar identica-proxy-use nil)
 (defvar identica-proxy-server nil)
@@ -2176,23 +2170,6 @@ un-highlight all other entries."
   "Generate configuration URL."
   (format "http://%s/api/statusnet/config.xml" (sn-account-server sn-current-account)))
 
-(let ((props
-       (when (display-mouse-p)
-	 `(local-map
-	   ,(purecopy (make-mode-line-mouse-map
-		       'mouse-2 #'identica-toggle-activate-buffer))
-	   help-echo "mouse-2 toggles automatic updates"))))
-  (defconst identica-modeline-active
-    (if identica-active-indicator-image
-	(apply 'propertize " "
-	       `(display ,identica-active-indicator-image ,@props))
-      " "))
-  (defconst identica-modeline-inactive
-    (if identica-inactive-indicator-image
-	(apply 'propertize "INACTIVE"
-	       `(display ,identica-inactive-indicator-image ,@props))
-      "INACTIVE")))
-
 (defun identica-toggle-activate-buffer ()
   (interactive)
   (setq identica-active-mode (not identica-active-mode))
@@ -2204,11 +2181,6 @@ un-highlight all other entries."
   (if identica-active-mode
       identica-modeline-active
     identica-modeline-inactive))
-
-(defun identica-update-mode-line ()
-  "Update mode line."
-  (force-mode-line-update))
-
 
 
 ;;;###autoload
