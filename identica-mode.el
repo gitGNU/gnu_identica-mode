@@ -2138,6 +2138,7 @@ If nil, will ask for username in minibuffer."
 
 (defun identica-group-join (&optional leaving)
   "Simple functions to join/leave a group we are visiting."
+  (interactive)
   (setq identica-method-class "statusnet/groups")
   (string-match "\\([^\\]*\\)\\(/.*\\)" identica-method)
   (let ((group-method (replace-match
