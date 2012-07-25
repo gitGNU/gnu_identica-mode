@@ -1,0 +1,323 @@
+
+    ;; identica-translator.el
+    ;; Copyright (C) 2012  Giménez, Christian N.
+
+    ;; This program is free software: you can redistribute it and/or modify
+    ;; it under the terms of the GNU General Public License as published by
+    ;; the Free Software Foundation, either version 3 of the License, or
+    ;; (at your option) any later version.
+
+    ;; This program is distributed in the hope that it will be useful,
+    ;; but WITHOUT ANY WARRANTY; without even the implied warranty of
+    ;; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    ;; GNU General Public License for more details.
+
+    ;; You should have received a copy of the GNU General Public License
+    ;; along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+    ;; Miércoles 25 De Julio Del 2012    
+
+
+;; PURPOSE:
+;; __________
+;;
+;; This library intends to transform the XML+HTTP retrieved into information structures usable for the interface. 
+;;
+;; Interface shows the information. This is because the interface knows how to show it and how to interpret it.
+;; ____________________
+
+(defun identica-http-get-default-sentinel
+  (&optional status method-class method parameters success-message)
+  (debug-print (window-buffer))
+  (let ((error-object (assoc-workaround :error status))
+	(active-p (eq (window-buffer) (identica-buffer))))
+    (cond (error-object
+	   (let ((error-data (format "%s" (caddr error-object))))
+	     (when (cond
+		    ((string= error-data "deleted\n") t)
+		    ((and (string= error-data "404") method
+			  (= 13 (string-match "/" method)))
+		     (message "No Such User: %s" (substring method 14))
+		     t)
+		    ((y-or-n-p
+		      (format "Identica-Mode: Network error:%s Retry? "
+			      status))
+		     (identica-http-get (sn-account-server sn-current-account)
+                                        (sn-account-auth-mode sn-current-account)
+                                        method-class method parameters)
+		     nil))
+	       ;; when the network process is deleted by another query
+	       ;; or the user queried is not found , query is _finished_
+	       ;; unsuccessful and we want to restore identica-method
+	       ;; to loose track of this unsuccessful attempt
+	       (setq identica-method (sn-account-last-timeline-retrieved sn-current-account)))))
+	  ((< (- (point-max) (or (re-search-forward ">\r?\n\r*$" nil t) 0)) 2)
+	   ;;Checking the whether the message is complete by
+	   ;;searching for > that closes the last tag, followed by
+	   ;;CRLF at (point-max)
+	   (let ((body (identica-get-response-body)))
+	     (if (not body)
+		 (identica-set-mode-string nil)
+	       (setq identica-new-dents-count
+		     (+ identica-new-dents-count
+			(count t (mapcar
+				  #'identica-cache-status-datum
+				  (reverse (identica-xmltree-to-status
+					    body))))))
+					; Shorten the timeline if necessary
+	       (if (and identica-display-max-dents
+			(> (safe-length identica-timeline-data)
+			   identica-display-max-dents))
+		   (cl-set-nthcdr identica-display-max-dents
+				  identica-timeline-data nil))
+	       (if active-p
+		   (identica-render-pending-dents)
+		 (identica-set-mode-string "pending"))))))))
+
+(defun identica-get-response-header (&optional buffer)
+  "Exract HTTP response header from HTTP response.
+BUFFER may be a buffer or the name of an existing buffer.
+ If BUFFER is omitted, 'current-buffer' is parsed."
+  (or buffer
+      (setq buffer (current-buffer)))
+  (set-buffer buffer)
+  (let ((end (or (and (search-forward-regexp "\r?\n\r?\n" (point-max) t)
+		      (match-beginning 0))
+		 0)))
+    (and (> end 1)
+         (buffer-substring (point-min) end))))
+
+(defun identica-get-response-body (&optional buffer)
+  "Exract HTTP response body from HTTP response, parse it as XML, and return a XML tree as list.
+`buffer' may be a buffer or the name of an existing buffer.
+ If `buffer' is omitted, current-buffer is parsed."
+  (or buffer
+      (setq buffer (current-buffer)))
+  (set-buffer buffer)
+  (set-buffer-multibyte t)
+  (let ((start (save-excursion
+		 (goto-char (point-min))
+		 (and (re-search-forward "<\\?xml" (point-max) t)
+		      (match-beginning 0)))))
+    (identica-clean-response-body)
+    (and start
+         (xml-parse-region start (point-max)))))
+
+(defun identica-clean-weird-chars (&optional buffer)
+  (with-current-buffer identica-http-buffer
+    (goto-char (point-min))
+    (while (re-search-forward "\
+
+?
+[0-9a-z]*\
+
+?
+?" nil t)
+(replace-match ""))
+(buffer-string)))
+
+(defun identica-clean-response-body ()
+  "Remove weird strings (e.g., 1afc, a or 0) from the response body.
+Known Statusnet issue.  Mostly harmless except if in tags."
+  (goto-char (point-min))
+  (while (re-search-forward "\r?\n[0-9a-z]+\r?\n" nil t)
+    (replace-match "")))
+
+(defun identica-status-to-status-datum (status)
+  (flet ((assq-get (item seq)
+		   (car (cddr (assq item seq)))))
+    (let* ((status-data (cddr status))
+	   id text source created-at truncated favorited
+	   in-reply-to-status-id
+	   in-reply-to-screen-name
+	   (user-data (cddr (assq 'user status-data)))
+	   user-id user-name
+	   conversation-id
+	   user-screen-name
+	   user-location
+	   user-description
+	   user-profile-image-url
+	   user-profile-url
+	   user-url
+	   user-protected
+	   regex-index)
+
+      (setq id (string-to-number (assq-get 'id status-data)))
+      (setq text (identica-decode-html-entities
+		  (assq-get 'text status-data)))      
+      (setq source (identica-decode-html-entities
+		    (assq-get 'source status-data)))
+      (setq created-at (assq-get 'created_at status-data))
+      (setq truncated (assq-get 'truncated status-data))
+      (setq favorited (assq-get 'favorited status-data))
+      (setq in-reply-to-status-id
+	    (identica-decode-html-entities
+	     (assq-get 'in_reply_to_status_id status-data)))
+      (setq in-reply-to-screen-name
+	    (identica-decode-html-entities
+	     (assq-get 'in_reply_to_screen_name status-data)))
+      (setq conversation-id (or (assq-get 'statusnet:conversation_id status-data) "0"))
+      (setq user-id (string-to-number (assq-get 'id user-data)))
+      (setq user-name (identica-decode-html-entities
+		       (assq-get 'name user-data)))
+      (setq user-screen-name (identica-decode-html-entities
+			      (assq-get 'screen_name user-data)))
+      (setq user-location (identica-decode-html-entities
+			   (assq-get 'location user-data)))
+      (setq user-description (identica-decode-html-entities
+			      (assq-get 'description user-data)))
+      (setq user-profile-image-url (assq-get 'profile_image_url user-data))
+      (setq user-url (assq-get 'url user-data))
+      (setq user-protected (assq-get 'protected user-data))
+      (setq user-profile-url (assq-get 'statusnet:profile_url user-data))
+
+      ;; make username clickable
+      (add-text-properties
+       0 (length user-name)
+       `(mouse-face highlight
+		    uri ,user-profile-url
+		    face identica-username-face)
+       user-name)
+
+      ;; make screen-name clickable
+      (add-text-properties
+       0 (length user-screen-name)
+       `(mouse-face highlight
+		    face identica-username-face
+		    uri ,user-profile-url
+		    face identica-username-face)
+       user-screen-name)
+
+      ;; make URI clickable
+      (setq regex-index 0)
+      (while regex-index
+	(setq regex-index
+	      (string-match "@\\([_[:word:]0-9]+\\)\\|!\\([_[:word:]0-9\-]+\\)\\|#\\([_[:word:]0-9\-]+\\)\\|\\(ur1\.ca/[a-z0-9]+/?\\|https?://[-_.!~*'()[:word:]0-9\;/?:@&=+$,%#]+\\)"
+			    text
+			    regex-index))
+	(when regex-index
+	  (let* ((matched-string (match-string-no-properties 0 text))
+		 (screen-name (match-string-no-properties 1 text))
+		 (group-name (match-string-no-properties 2 text))
+		 (tag-name (match-string-no-properties 3 text))
+		 (uri (match-string-no-properties 4 text)))
+	    (add-text-properties
+	     (if (or screen-name group-name tag-name)
+		 (+ 1 (match-beginning 0))
+	       (match-beginning 0))
+	     (match-end 0)
+	     (if (or screen-name group-name tag-name)
+		 `(mouse-face
+		   highlight
+		   face identica-uri-face
+		   uri ,(if screen-name
+			    (concat "https://" (sn-account-server sn-current-account) "/" screen-name)
+			  (if group-name
+			      (concat "https://" (sn-account-server sn-current-account) "/group/" group-name)
+			    (concat "https://" (sn-account-server sn-current-account) "/tag/" tag-name)))
+		   uri-in-text ,(if screen-name
+				    (concat "https://" (sn-account-server sn-current-account) "/" screen-name)
+				  (if group-name
+				      (concat "https://" (sn-account-server sn-current-account) "/group/" group-name)
+				    (concat "https://" (sn-account-server sn-current-account) "/tag/" tag-name)))
+                   tag ,tag-name
+                   group ,group-name)
+	       `(mouse-face highlight
+			    face identica-uri-face
+			    uri ,uri
+			    uri-in-text ,uri))
+	     text))
+	  (setq regex-index (match-end 0)) ))
+
+
+      ;; make source pretty and clickable
+      (when (string-match "<a href=\"\\(.*\\)\">\\(.*\\)</a>" source)
+	(let ((uri (match-string-no-properties 1 source))
+	      (caption (match-string-no-properties 2 source)))
+	  (setq source caption)
+	  (add-text-properties
+	   0 (length source)
+	   `(mouse-face highlight
+			face identica-uri-face
+			source ,source)
+	   source)))
+
+      ;; save last update time
+      (setq identica-timeline-last-update created-at)
+
+      (mapcar
+       (lambda (sym)
+	 `(,sym . ,(symbol-value sym)))
+       '(id text source created-at truncated favorited
+	    in-reply-to-status-id
+	    in-reply-to-screen-name
+	    conversation-id
+	    user-id user-name user-screen-name user-location
+	    user-description
+	    user-profile-image-url
+	    user-profile-url
+	    user-url
+	    user-protected)))))
+
+(defun identica-xmltree-to-status (xmltree)
+  (mapcar #'identica-status-to-status-datum
+	  ;; quirk to treat difference between xml.el in Emacs21 and Emacs22
+	  ;; On Emacs22, there may be blank strings
+	  (let ((ret nil) (statuses (reverse (cddr (car xmltree)))))
+	    (while statuses
+	      (when (consp (car statuses))
+		(setq ret (cons (car statuses) ret)))
+	      (setq statuses (cdr statuses)))
+	    ret)))
+
+
+
+(defun identica-decode-html-entities (encoded-str)
+  (if encoded-str
+      (let ((cursor 0)
+	    (found-at nil)
+	    (result '()))
+	(while (setq found-at
+		     (string-match "&\\(#\\([0-9]+\\)\\|\\([A-Za-z]+\\)\\);"
+				   encoded-str cursor))
+	  (when (> found-at cursor)
+	    (push (substring encoded-str cursor found-at) result))
+	  (let ((number-entity (match-string-no-properties 2 encoded-str))
+		(letter-entity (match-string-no-properties 3 encoded-str)))
+	    (cond (number-entity
+		   (push
+		    (char-to-string
+		     (identica-ucs-to-char
+		      (string-to-number number-entity))) result))
+		  (letter-entity
+		   (cond ((string= "gt" letter-entity) (push ">" result))
+			 ((string= "lt" letter-entity) (push "<" result))
+			 (t (push "?" result))))
+		  (t (push "?" result)))
+	    (setq cursor (match-end 0))))
+	(push (substring encoded-str cursor) result)
+	(apply 'concat (nreverse result)))
+    ""))
+
+					; ____________________
+					; Configuration
+					;
+
+(defun identica-retrieve-configuration ()
+  "Retrieve the configuration for the current statusnet server."
+  (identica-http-get (sn-account-server sn-current-account) (sn-account-auth-mode sn-current-account)
+                     "statusnet" "config" nil 'identica-http-get-config-sentinel))
+
+(defun identica-http-get-config-sentinel
+  (&optional status method-class method parameters success-message)
+  "Process configuration page retrieved from statusnet server."
+  (let ((error-object (assoc-workaround :error status)))
+    (unless error-object
+      (let* ((body (identica-get-response-body))
+	     (site (xml-get-children (car body) 'site))
+	     (textlimit (xml-get-children (car site) 'textlimit))
+	     (textlimit-value (caddar textlimit)))
+	(when (> (string-to-number textlimit-value) 0)
+	  (setf (sn-account-textlimit sn-current-account) (string-to-number textlimit-value))))))
+  (identica-start))
+

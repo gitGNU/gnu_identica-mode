@@ -274,4 +274,119 @@ static char * statusnet_off_xpm[] = {
 	       `(display ,identica-inactive-indicator-image ,@props))
       "INACTIVE")))
 
+					; ________________________________________
+					; Moving and positioning functions
+
+(defun identica-get-username-at-pos (pos)
+  (let ((start-pos pos)
+	(end-pos))
+    (catch 'not-found
+      (while (memq-face identica-username-face (get-text-property start-pos 'face))
+	(setq start-pos (1- start-pos))
+	(when (or (eq start-pos nil) (eq start-pos 0)) (throw 'not-found nil)))
+      (setq start-pos (1+ start-pos))
+      (setq end-pos (next-single-property-change pos 'face))
+      (buffer-substring start-pos end-pos))))
+
+(defun identica-goto-next-status ()
+  "Go to next status."
+  (interactive)
+  (let ((pos))
+    (setq pos (identica-get-next-username-face-pos (point)))
+    (if pos
+	(goto-char pos)
+      (progn (goto-char (buffer-end 1)) (message "End of status.")))))
+
+(defun identica-goto-previous-status ()
+  "Go to previous status."
+  (interactive)
+  (let ((pos))
+    (setq pos (identica-get-previous-username-face-pos (point)))
+    (if pos
+	(goto-char pos)
+      (message "Start of status."))))
+
+(defun identica-get-next-username-face-pos (pos &optional object)
+  "Returns the position of the next username after POS, or nil when end of string or buffer is reached."
+  (interactive "P")
+  (let ((prop))
+    (catch 'not-found
+      (while (and pos (not (memq-face identica-username-face prop)))
+	(setq pos (next-single-property-change pos 'face object))
+	(when (eq pos nil) (throw 'not-found nil))
+	(setq prop (get-text-property pos 'face object)))
+      pos)))
+
+(defun identica-get-previous-username-face-pos (pos &optional object)
+  "Returns the position of the previous username before POS, or nil when start of string or buffer is reached."
+  (interactive)
+  (let ((prop))
+    (catch 'not-found
+      (while (and pos (not (memq-face identica-username-face prop)))
+	(setq pos (previous-single-property-change pos 'face object))
+	(when (eq pos nil) (throw 'not-found nil))
+	(setq prop (get-text-property pos 'face object)))
+      pos)))
+
+(defun identica-goto-next-status-of-user ()
+  "Go to next status of user."
+  (interactive)
+  (let ((user-name (identica-get-username-at-pos (point)))
+	(pos (identica-get-next-username-face-pos (point))))
+    (while (and (not (eq pos nil))
+		(not (equal (identica-get-username-at-pos pos) user-name)))
+      (setq pos (identica-get-next-username-face-pos pos)))
+    (if pos
+	(goto-char pos)
+      (if user-name
+	  (message "End of %s's status." user-name)
+	(message "Invalid user-name.")))))
+
+(defun identica-goto-previous-status-of-user ()
+  "Go to previous status of user."
+  (interactive)
+  (let ((user-name (identica-get-username-at-pos (point)))
+	(pos (identica-get-previous-username-face-pos (point))))
+    (while (and (not (eq pos nil))
+		(not (equal (identica-get-username-at-pos pos) user-name)))
+      (setq pos (identica-get-previous-username-face-pos pos)))
+    (if pos
+	(goto-char pos)
+      (if user-name
+	  (message "Start of %s's status." user-name)
+	(message "Invalid user-name.")))))
+
+(defun identica-next-link nil
+  (interactive)
+  (goto-char (next-single-property-change (point) 'uri))
+  (when (not (get-text-property (point) 'uri))
+    (goto-char (next-single-property-change (point) 'uri))))
+
+(defun identica-prev-link nil
+  (interactive)
+  (goto-char (previous-single-property-change (point) 'uri))
+  (when (not (get-text-property (point) 'uri))
+    (goto-char (previous-single-property-change (point) 'uri))))
+
+
+(defun identica-click ()
+  (interactive)
+  (let ((uri (get-text-property (point) 'uri)))
+    (when uri (browse-url uri))))
+
+(defun identica-enter ()
+  (interactive)
+  (let ((username (get-text-property (point) 'username))
+	(id (get-text-property (point) 'id))
+	(uri (get-text-property (point) 'uri))
+        (group (get-text-property (point) 'group))
+        (tag (get-text-property (point) 'tag)))
+    (if group (identica-group-timeline group)
+      (if tag (identica-tag-timeline tag)
+        (if uri (browse-url uri)
+          (if username
+	      (identica-update-status identica-update-status-method
+				      (concat "@" username " ") id)))))))
+
+
 (provide 'identica-major-mode)
