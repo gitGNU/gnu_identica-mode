@@ -114,13 +114,6 @@
 (unless (fboundp 'url-basepath)
   (defalias 'url-basepath 'url-file-directory))
 
-;;workaround for url-unhex-string bug that was fixed in emacs 23.3
-(defvar identica-unhex-broken nil
-  "Predicate indicating broken-ness of `url-unhex-string'.
-
-If non-nil, indicates that `url-unhex-string' is broken and
-must be worked around when using oauth.")
-
 (defgroup identica-mode nil
   "Identica Mode for microblogging"
   :tag "Microblogging"
@@ -182,32 +175,8 @@ If non-nil, dents over this amount will bre removed.")
     (require 'w3m))
   (setq identica-auth-mode "oauth"))
 
-(defvar identica-mode-oauth-consumer-key
-  "53e8e7bf7d1be8e58ef1024b31478d2b")
-
-(defvar identica-mode-oauth-consumer-secret
-  "1ab0876f14bd82c4eb450f720a0e84ae")
-
 (defcustom statusnet-server "identi.ca"
   "Statusnet instance url."
-  :type 'string
-  :group 'identica-mode)
-
-(defcustom statusnet-request-url
-  "https://identi.ca/api/oauth/request_token"
-  "Statusnet oauth request_token url."
-  :type 'string
-  :group 'identica-mode)
-
-(defcustom statusnet-access-url
-  "https://identi.ca/api/oauth/access_token"
-  "Statusnet oauth access_token url."
-  :type 'string
-  :group 'identica-mode)
-
-(defcustom statusnet-authorize-url
-  "https://identi.ca/api/oauth/authorize"
-  "Statusnet authorization url."
   :type 'string
   :group 'identica-mode)
 
@@ -215,8 +184,6 @@ If non-nil, dents over this amount will bre removed.")
   "Number of characters allowed in a status."
   :type 'integer
   :group 'identica-mode)
-
-(defvar oauth-access-token nil)
 
 (defcustom statusnet-port 80
   "Port on which StatusNet instance listens."
@@ -319,17 +286,6 @@ Initialize the global method with the default, or with METHOD, if present."
   (unless method
     (setq method "friends_timeline"))
   (get-buffer-create identica-buffer))
-
-(defstruct (statusnet-oauth-data
-	    (:conc-name sn-oauth-))
-  "The oauth configuration associated with a statusnet account."
-  consumer-key ; string
-  consumer-secret ; string
-  request-url ; string
-  access-url ; string
-  authorize-url ; string
-  access-token ; string
-)
 
 (defstruct (statusnet-account
 	    (:conc-name sn-account-))
@@ -514,13 +470,6 @@ of identica-stripe-face."
 (defun identica-kill-buffer-function ()
   (when (eq major-mode 'identica-mode)
     (identica-stop)))
-
-(defun identica-autoload-oauth ()
-  "Autoloads oauth.el when needed."
-  (autoload 'oauth-authorize-app "oauth")
-  (autoload 'oauth-hexify-string "oauth")
-  (autoload 'make-oauth-access-token "oauth"))
-
 
 (defun identica-change-user ()
   (interactive)
