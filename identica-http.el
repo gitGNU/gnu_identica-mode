@@ -37,6 +37,9 @@
 ;; ________________________________________
 ;;
 
+;; TAKE A LOOK:
+;; (1) A parentezised string as parameter?
+
 (defvar identica-http-buffer nil
   "Pointer to the current http response buffer.")
 
@@ -255,34 +258,95 @@ Shamelessly stolen from yammer.el"
 	(kill-this-buffer))))
   (sn-oauth-access-token (sn-account-oauth-data sn-current-account)))
 
+(defun identica-percent-encode (str &optional coding-system)
+  "Make a symbol translation for URLs parameters. 
+
+For example: 
+% is translated into %25, space character is translated into +, etc.
+
+\"(%s hola mundo áéíóú)\" will be translated into:
+\"%28%25s+hola+mundo+%c3%a1%c3%a9%c3%ad%c3%b3%c3%ba%29\"
+
+Observe that translation depends on authentication mode(variable `sn-current-account').
+"
+  (if (equal (sn-account-auth-mode sn-current-account) "oauth")
+      (oauth-hexify-string str)
+    (when (or (null coding-system)
+	      (not (coding-system-p coding-system)))
+      (setq coding-system 'utf-8))
+    (mapconcat
+     (lambda (c)
+       (cond
+	((identica-url-reserved-p c)
+	 (char-to-string c))
+	((eq c ? ) "+")
+	(t (format "%%%x" c))))
+     (encode-coding-string str coding-system)
+     "")))
+
+(defun identica-make-url (server method-class method &optional parameters)
+  "Make a string containing the URL to connect to the indicater SERVER at that METHOD-CLASS and METHOD.
+You can give PARAMETERS for HTTP GET optionaly in a list of list format. For example:
+  '((\"id\" \"19923\")(\"name\" \"juan bonachón\"))
+
+This will return http://server/api/methods.xml?id=19923&name=juan%20bonachón.
+
+A simbol translation is done for the PARAMETERS using `identica-percent-encode'."
+  
+  (format "http://%s/api/%s%s.xml"
+	  server
+	  (when (not (string-equal method-class "none"))
+	    (concat method-class "/" ))
+	  method
+	  (when parameters
+	    (concat "?"
+		    (mapconcat
+		     (lambda (param-pair)
+		       (format "%s=%s"
+			       (identica-percent-encode (car param-pair))
+			       (identica-percent-encode (cdr param-pair)))) ;; (1) Becareful here! cdr returns a parentezised string like "(hi)"!
+		     parameters
+		     "&")))))
+
+(defvar identica-http-sentinel nil
+  "This is used for `identica-http-nothing-sentinel'. If this variable has a function, it will be called after
+the sentinel finish checking all the HTTP errors and no errors found.")
+
+(defun identica-http-nothing-sentinel (status &rest parameters)
+  "This sentinel checks for HTTP errors and then calls the function stored at `identica-http-sentinel'
+if no erros found."
+  (funcall identica-http-sentinel parameters)
+  )
+
 (defun identica-http-get
-  (server auth-mode method-class method &optional parameters sentinel sentinel-arguments)
+  (method-class method &optional parameters sentinel sentinel-arguments)
   "Basic function which communicates with server.
+
 METHOD-CLASS and METHOD are parameters for getting dents messages and
-other information from SERVER as specified in api documentation.
-Third optional arguments specify the additional parameters required by
-the above METHOD.  It is specified as an alist with parameter name and
-its corresponding value SENTINEL represents the callback function to
-be called after the http response is completely retrieved.
+other information from server as specified in api documentation.
+
+PARAMETERS arguments specify the additional parameters required by
+the above METHOD.  It is specified as an alist with parameter name and its corresponding value.
+
+SENTINEL represents the callback function to be called after the http response is completely retrieved.
+If SENTINEL is nil, the following sentinel is used:`identica-http-nothing-sentinel'.
+
 SENTINEL-ARGUMENTS is the list of arguments (if any) of the SENTINEL
-procedure."
-  (or sentinel (setq sentinel 'identica-http-get-default-sentinel))
-  (let ((url (concat "http://" server "/api/"
-		     (when (not (string-equal method-class "none"))
-		       (concat method-class "/" ))
-		     method ".xml"
-		     (when parameters
-		       (concat "?"
-			       (mapconcat
-				(lambda (param-pair)
-				  (format "%s=%s"
-					  (identica-percent-encode (car param-pair))
-					  (identica-percent-encode (cdr param-pair))))
-				parameters
-				"&")))))
-	(url-package-name "emacs-identica-mode")
-	(url-package-version identica-mode-version)
-	(url-show-status nil))
+procedure.
+
+The variable `sn-current-account' gives the following important information:
+* Server to connect.
+* Port to connect.
+* Username and password if necessary
+* If oauth is used for authentication(instead of username and pass.)
+"
+  (or sentinel (setq sentinel 'identica-http-nothing-sentinel))
+  (let* ((server (sn-account-server sn-current-account))
+	 (auth-mode (sn-account-auth-mode sn-current-account))
+	 (url (identica-make-url server method-class method parameters))
+	 (url-package-name "emacs-identica-mode")
+	 (url-package-version identica-mode-version)
+	 (url-show-status nil))
     (identica-set-proxy)
     (unless (equal auth-mode "none")
       (if (equal auth-mode "oauth")
@@ -295,9 +359,7 @@ procedure."
     (setq identica-http-buffer
           (identica-url-retrieve url sentinel method-class
                                  method parameters sentinel-arguments auth-mode))
-    (set-buffer identica-buffer)
-    (set-buffer identica-buffer)
-    (identica-set-mode-string t)))
+    ))
 
 (defun identica-url-retrieve
   (url sentinel method-class method parameters sentinel-arguments &optional auth-mode unhex-workaround)
