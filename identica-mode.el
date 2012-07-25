@@ -138,15 +138,6 @@ must be worked around when using oauth.")
 
 (defvar identica-timer nil "Timer object for timeline refreshing will be stored here.  DO NOT SET VALUE MANUALLY.")
 
-(defvar identica-urlshortening-services-map
-  '((tinyurl . "http://tinyurl.com/api-create.php?url=")
-    (toly    . "http://to.ly/api.php?longurl=")
-    (google . "http://ggl-shortener.appspot.com/?url=")
-    (ur1ca . "http://ur1.ca/?longurl=")
-    (tighturl . "http://2tu.us/?save=y&url=")
-    (isgd . "http://is.gd/create.php?format=simple&url="))
-  "Alist of tinyfy services.")
-
 (defvar identica-new-dents-count 0
   "Number of new tweets when `identica-new-dents-hook' is run.")
 
@@ -181,12 +172,7 @@ If non-nil, dents over this amount will bre removed.")
   :type '(choice (const :tag "Ask" nil) (string))
   :group 'identica-mode)
 
-(defcustom identica-auth-mode "password"
-  "Authorization mode used, options are password and oauth."
-  :type 'string
-  :group 'identica-mode)
-
-(defun identica-enable-oauth ()
+(defun identica-enable-oauth ()  
   "Enables oauth for identica-mode."
   (interactive)
   (require 'oauth)
@@ -283,11 +269,6 @@ The available choices are:
 		 (const :tag "Edit status in independent buffer" edit-buffer))
   :group 'identica-mode)
 
-(defcustom identica-http-get-timeout 10
-  "Controls how long to wait for a response from the server."
-  :type 'integer
-  :group 'identica-mode)
-
 ;; Initialize with default timeline
 (defvar identica-method identica-default-timeline)
 (defvar identica-method-class "statuses")
@@ -331,12 +312,6 @@ The available choices are:
 ;; %f - source
 ;; %# - id
 
-(defcustom identica-urlshortening-service 'ur1ca
-  "The service to use for URL shortening.
-Values understood are ur1ca, tighturl, tinyurl, toly, google and isgd."
-  :type 'symbol
-  :group 'identica-mode)
-
 (defvar identica-buffer "*identica*")
 (defun identica-buffer (&optional method)
   "Create a buffer for use by identica-mode.
@@ -375,9 +350,6 @@ Initialize the global method with the default, or with METHOD, if present."
 (defvar sn-current-account nil
   "A pointer to the statusnet account being processed.")
 
-(defvar identica-http-buffer nil
-  "Pointer to the current http response buffer.")
-
 (defvar identica-timeline-data nil)
 (defvar identica-timeline-last-update nil)
 (defvar identica-highlighted-entries nil
@@ -400,23 +372,6 @@ of identica-stripe-face."
 of identica-stripe-face."
   :type 'boolean
   :group 'identica-mode)
-
-;;; Proxy
-(defvar identica-proxy-use nil)
-(defvar identica-proxy-server nil)
-(defvar identica-proxy-port 8080)
-(defvar identica-proxy-user nil)
-(defvar identica-proxy-password nil)
-
-(defun identica-toggle-proxy ()
-  "Toggle whether identica-mode uses a proxy."
-  (interactive)
-  (setq identica-proxy-use
-	(not identica-proxy-use))
-  (message "%s %s"
-	   "Use Proxy:"
-	   (if identica-proxy-use
-	       "on" "off")))
 
 (defun identica-user-agent-default-function ()
   "Identica mode default User-Agent function."
@@ -567,57 +522,6 @@ of identica-stripe-face."
   (autoload 'make-oauth-access-token "oauth"))
 
 
-;;;
-;;; Basic HTTP functions
-;;;
-
-(defun identica-set-proxy (&optional url username passwd server port)
-  "Sets the proxy authentication variables as required by url library.
-When called with no arguments, it reads `identica-mode' proxy
-variables to get the authentication parameters.URL is either a string
-or parsed URL.  If URL is non-nil and valid, proxy authentication
-values are read from it.  The rest of the arguments can be used to
-directly set proxy authentication.  This function essentially adds
-authentication parameters from one of the above methods to the double
-alist `url-http-proxy-basic-auth-storage' and sets `url-using-proxy'."
-  (let* ((href (if (stringp url)
-		   (url-generic-parse-url url)
-		 url))
-	 (port (or (and href (url-port href))
-		   port identica-proxy-port))
-	 (port (if (integerp port) (int-to-string port) port))
-	 (server (or (and href (url-host href))
-		     server identica-proxy-server))
-	 (server (and server
-		      (concat server (when port (concat ":" port)))))
-	 (file (if href (let ((file-url (url-filename href)))
-			  (cond
-			   ((string= "" file-url) "/")
-			   ((string-match "/$" file-url) file-url)
-			   (t (url-basepath file-url))))
-		 "Proxy"))
-	 (password (or (and href (url-password href))
-		       passwd identica-proxy-password))
-	 (auth (concat (or (and href (url-user href))
-			   username identica-proxy-user)
-		       (and password (concat ":" password)))))
-    (when (and identica-proxy-use
-	       (not (string= "" server))
-	       (not (string= "" auth)))
-      (setq url-using-proxy server)
-      (let* ((proxy-double-alist
-	      (or (assoc server
-			 url-http-proxy-basic-auth-storage)
-		  (car (push (cons server nil)
-			     url-http-proxy-basic-auth-storage))))
-	     (proxy-auth-alist (assoc file proxy-double-alist)))
-	(if proxy-auth-alist
-	    (setcdr proxy-auth-alist (base64-encode-string auth))
-	  (setcdr proxy-double-alist
-		  (cons (cons file
-			      (base64-encode-string auth))
-			(cdr-safe proxy-double-alist))))))))
-
 (defun identica-change-user ()
   (interactive)
   "Interactive function to instantly change user authentication.
@@ -640,150 +544,6 @@ enabling dynamic change of user authentication."
 		     nil nil (sn-account-username sn-current-account))
 	(sn-account-password sn-current-account)
 	(read-passwd "Password: " nil (sn-account-password sn-current-account))))
-
-(defun identica-set-auth (&optional url username passwd server port)
-  "Sets the authentication parameters as required by url library.
-If URL is non-nil and valid, it reads user authentication
-parameters from url.  If URL is nil, Rest of the arguments can be
-used to directly set user authentication.
-When called with no arguments, user authentication parameters are
-read from identica-mode variables `(sn-account-username sn-current-account)'
-`(sn-account-password sn-current-account)' `(sn-account-server sn-current-account)'
- `(sn-account-port sn-current-account)'.
-The username and password can also be set on ~/.authinfo,
-~/.netrc or ~/.authinfo.gpg files for better security.
-In this case `(sn-account-password sn-current-account)' should
-not be predefined in any .emacs or init.el files, only
-`(sn-account-username sn-current-account)' should be set."
-  (unless (sn-account-username sn-current-account)
-    (identica-ask-credentials))
-  (let* ((href (if (stringp url)
-		   (url-generic-parse-url url)
-		 url))
-	 (port (or (and href (url-port href))
-		   port (sn-account-port sn-current-account)))
-	 (port (if (integerp port) (int-to-string port) port))
-	 (server (or (and href (url-host href))
-		     server (sn-account-server sn-current-account)))
-	 (servername server)
-	 (server (and server
-		      (concat server (when port (concat ":" port)))))
-	 (file (if href (let ((file-url (url-filename href)))
-			  (cond
-			   ((string= "" file-url) "/")
-			   ((string-match "/$" file-url) file-url)
-			   (t (url-basepath file-url))))
-		 "Identi.ca API"))
-
-	 (auth-user (if (functionp 'auth-source-search)
-		       (plist-get (car (auth-source-search :host servername :max 1)) :user)
-		     (auth-source-user-or-password "login" server "http")))
-	 (auth-pass (if (functionp 'auth-source-search)
-			(if (functionp (plist-get (car (auth-source-search :host servername :max 1)) :secret))
-			    (funcall (plist-get (car (auth-source-search :host servername :max 1)) :secret))
-			  (plist-get (car (auth-source-search :host servername :max 1)) :secret))
-		      (auth-source-user-or-password "password" server "http")))
-	 (password (or auth-pass (and href (url-password href))
-		       passwd (sn-account-password sn-current-account)))
-	 (auth (concat (or auth-user (and href (url-user href))
-			   username (sn-account-username sn-current-account))
-		       (and password (concat ":" password)))))
-    (when (and (not (string= "" server))
-	       (not (string= "" auth)))
-      (let* ((server-double-alist
-	      (or (assoc server
-			 url-http-real-basic-auth-storage)
-		  (car (push (cons server nil)
-			     url-http-real-basic-auth-storage))))
-	     (api-auth-alist (assoc file server-double-alist)))
-	(if api-auth-alist
-	    (setcdr api-auth-alist (base64-encode-string auth))
-	  (setcdr server-double-alist
-		  (cons (cons file
-			      (base64-encode-string auth))
-			(cdr-safe server-double-alist))))))))
-
-(defun identica-initialize-oauth ()
-  "Get authentication token unless we have one stashed already.
-Shamelessly stolen from yammer.el"
-  (let ((filename (concat "~/." (sn-account-server sn-current-account) "-"
-			  (sn-account-username sn-current-account) "-oauth-token")))
-    (when (file-exists-p filename)
-      (save-excursion
-	(find-file filename)
-	(let ((str (buffer-substring (point-min) (point-max))))
-	  (if (string-match "\\([^:]*\\):\\(.*\\)"
-			    (buffer-substring (point-min) (point-max)))
-	      (setf (sn-oauth-access-token (sn-account-oauth-data sn-current-account))
-		    (make-oauth-access-token
-		     :consumer-key (sn-oauth-consumer-key (sn-account-oauth-data sn-current-account))
-		     :consumer-secret (sn-oauth-consumer-secret (sn-account-oauth-data sn-current-account))
-		     :auth-t (make-oauth-t
-			      :token (match-string 1 str)
-			      :token-secret (match-string 2 str))))))
-	(save-buffer)
-	(kill-this-buffer)))
-    (unless (sn-oauth-access-token (sn-account-oauth-data sn-current-account))
-      (setf (sn-oauth-access-token (sn-account-oauth-data sn-current-account))
-	    (oauth-authorize-app (sn-oauth-consumer-key (sn-account-oauth-data sn-current-account))
-				 (sn-oauth-consumer-secret (sn-account-oauth-data sn-current-account))
-				 (sn-oauth-request-url (sn-account-oauth-data sn-current-account))
-				 (sn-oauth-access-url (sn-account-oauth-data sn-current-account))
-				 (sn-oauth-authorize-url (sn-account-oauth-data sn-current-account))))
-      (save-excursion
-	(find-file filename)
-	(end-of-buffer)
-	(let ((token (oauth-access-token-auth-t (sn-oauth-access-token (sn-account-oauth-data sn-current-account)))))
-	  (insert (format "%s:%s\n"
-			  (oauth-t-token token)
-			  (oauth-t-token-secret token))))
-	(save-buffer)
-	(kill-this-buffer))))
-  (sn-oauth-access-token (sn-account-oauth-data sn-current-account)))
-
-(defun identica-http-get
-  (server auth-mode method-class method &optional parameters sentinel sentinel-arguments)
-  "Basic function which communicates with server.
-METHOD-CLASS and METHOD are parameters for getting dents messages and
-other information from SERVER as specified in api documentation.
-Third optional arguments specify the additional parameters required by
-the above METHOD.  It is specified as an alist with parameter name and
-its corresponding value SENTINEL represents the callback function to
-be called after the http response is completely retrieved.
-SENTINEL-ARGUMENTS is the list of arguments (if any) of the SENTINEL
-procedure."
-  (or sentinel (setq sentinel 'identica-http-get-default-sentinel))
-  (let ((url (concat "http://" server "/api/"
-		     (when (not (string-equal method-class "none"))
-		       (concat method-class "/" ))
-		     method ".xml"
-		     (when parameters
-		       (concat "?"
-			       (mapconcat
-				(lambda (param-pair)
-				  (format "%s=%s"
-					  (identica-percent-encode (car param-pair))
-					  (identica-percent-encode (cdr param-pair))))
-				parameters
-				"&")))))
-	(url-package-name "emacs-identica-mode")
-	(url-package-version identica-mode-version)
-	(url-show-status nil))
-    (identica-set-proxy)
-    (unless (equal auth-mode "none")
-      (if (equal auth-mode "oauth")
-          (or (sn-oauth-access-token (sn-account-oauth-data sn-current-account))
-              (identica-initialize-oauth))
-        (identica-set-auth url)))
-    (when (get-buffer-process identica-http-buffer)
-      (delete-process identica-http-buffer)
-      (kill-buffer identica-http-buffer))
-    (setq identica-http-buffer
-          (identica-url-retrieve url sentinel method-class
-                                 method parameters sentinel-arguments auth-mode))
-    (set-buffer identica-buffer)
-    (set-buffer identica-buffer)
-    (identica-set-mode-string t)))
 
 (defun identica-render-pending-dents ()
   (interactive)
@@ -1063,65 +823,6 @@ we are interested in."
                                          conversation-id, (attr 'conversation-id))
 			     formatted-status)
 	formatted-status))))
-
-(defun identica-url-retrieve
-  (url sentinel method-class method parameters sentinel-arguments &optional auth-mode unhex-workaround)
-  "Call url-retrieve or oauth-url-retrieve dsepending on the mode.
-Apply url-unhex-string workaround if necessary."
-  (if (and (equal auth-mode "oauth")
-	   (sn-oauth-access-token (sn-account-oauth-data sn-current-account)))
-      (if unhex-workaround
-	  (flet ((oauth-extract-url-params
-		  (req)
-		  "Modified oauth-extract-url-params using w3m-url-decode-string to work around
-bug in url-unhex-string present in emacsen previous to 23.3."
-		  (let ((url (oauth-request-url req)))
-		    (when (string-match (regexp-quote "?") url)
-		      (mapcar (lambda (pair)
-				`(,(car pair) . ,(w3m-url-decode-string (cadr pair))))
-			      (url-parse-query-string (substring url (match-end 0))))))))
-	    (identica-url-retrieve url sentinel method-class method parameters sentinel-arguments auth-mode))
-	(oauth-url-retrieve (sn-oauth-access-token (sn-account-oauth-data sn-current-account)) url sentinel
-			    (append (list method-class method parameters)
-				    sentinel-arguments)))
-    (url-retrieve url sentinel
-		  (append (list method-class method parameters)
-			  sentinel-arguments))))
-
-(defun identica-http-post
-  (method-class method &optional parameters sentinel sentinel-arguments)
-  "Send HTTP POST request to statusnet server.
-METHOD-CLASS must be one of Identica API method classes(statuses, users or direct_messages).
-METHOD must be one of Identica API method which belongs to METHOD-CLASS.
-PARAMETERS is alist of URI parameters. ex) ((\"mode\" . \"view\") (\"page\" . \"6\")) => <URI>?mode=view&page=6"
-  (or sentinel (setq sentinel 'identica-http-post-default-sentinel))
-  (let ((url-request-method "POST")
-	(url (concat "http://"(sn-account-server sn-current-account) "/api/" method-class "/" method ".xml"
-		     (when parameters
-		       (concat "?"
-			       (mapconcat
-				(lambda (param-pair)
-				  (format "%s=%s"
-					  (identica-percent-encode (car param-pair))
-					  (identica-percent-encode (cdr param-pair))))
-				parameters
-				"&")))))
-	(url-package-name "emacs-identicamode")
-	(url-package-version identica-mode-version)
-	;; (if (assoc `media parameters)
-	;; (url-request-extra-headers '(("Content-Type" . "multipart/form-data")))
-	(url-request-extra-headers '(("Content-Length" . "0")))
-	(url-show-status nil))
-    (identica-set-proxy)
-    (if (equal (sn-account-auth-mode sn-current-account) "oauth")
-	(or (sn-oauth-access-token (sn-account-oauth-data sn-current-account))
-	    (identica-initialize-oauth))
-      (identica-set-auth url))
-    (when (get-buffer-process identica-http-buffer)
-      (delete-process identica-http-buffer)
-      (kill-buffer identica-http-buffer))
-    (identica-url-retrieve url sentinel method-class method parameters
-			   sentinel-arguments (sn-account-auth-mode sn-current-account) identica-unhex-broken)))
 
 (defun identica-http-post-default-sentinel
   (&optional status method-class method parameters success-message)
@@ -1584,59 +1285,6 @@ prompt; \"Down\" counts down from (sn-account-textlimit sn-current-account); \"U
   (interactive "f")
   (identica-update-status 'minibuffer nil reply-to-id nil nil `((media . ,(insert-file-contents-literally attachment)))))
 
-(defun identica-tinyurl-unjson-google (result)
-  "Gets only the URL from JSON URL tinyfying service results.
-
-Google's shortening service, goo.gl, returns shortened URLs as a
-JSON dictionary. This function retrieves only the URL value from
-this dictionary, only if identica-urlshortening-service is 'google."
-  (if (eq identica-urlshortening-service 'google)
-      (cdr (assoc 'short_url (json-read-from-string result)))
-    result))
-
-(defun identica-ur1ca-get (api longurl)
-  "Shortens url through ur1.ca free service 'as in freedom'."
-  (let* ((url-request-method "POST")
-	 (url-request-extra-headers
-	  '(("Content-Type" . "application/x-www-form-urlencoded")))
-	 (url-request-data (url-hexify-string longurl))
-	 (buffer (url-retrieve-synchronously (concat api (url-hexify-string longurl)))))
-    (with-current-buffer buffer
-      (goto-char (point-min))
-      (prog1
-	  (if (eq api "ur1ca")
-	      (if (search-forward-regexp "Your .* is: .*>\\(http://ur1.ca/[0-9A-Za-z].*\\)</a>" nil t)
-		  (match-string-no-properties 1)
-		(error "URL shortening service failed: %s" longurl))
-	    (if (search-forward-regexp "\\(http://[0-9A-Za-z/].*\\)" nil t)
-		(match-string-no-properties 1)
-	      (error "URL shortening service failed: %s" longurl)))
-	(kill-buffer buffer)) )))
-
-(defun identica-shortenurl-get (longurl)
-  "Shortens url through a url shortening service."
-  (let ((api (cdr (assoc identica-urlshortening-service
-			 identica-urlshortening-services-map))))
-    (unless api
-      (error "`identica-urlshortening-service' was invalid.  try one of %s"
-	     (mapconcat (lambda (x)
-			  (symbol-name (car x)))
-			identica-urlshortening-services-map ", ")
-	     "."))
-    (if longurl
-	(if (not (eq identica-urlshortening-service 'google))
-	    (identica-ur1ca-get api longurl)
-	  (let ((buffer (url-retrieve-synchronously (concat api longurl))))
-	    (with-current-buffer buffer
-	      (goto-char (point-min))
-	      (prog1
-		  (identica-tinyurl-unjson-google
-		   (if (search-forward-regexp "\n\r?\n\\([^\n\r]*\\)" nil t)
-		       (match-string-no-properties 1)
-		     (error "URL shortening service failed: %s" longurl)))
-		(kill-buffer buffer))))
-	  nil))))
-
 (defun identica-shortenurl-replace-at-point ()
   "Replace the url at point with a tiny version."
   (interactive)
@@ -1671,53 +1319,6 @@ this dictionary, only if identica-urlshortening-service is 'google."
 	    (insert uri)
             (message (concat "Expanded Short URL " original-url "to Long URL: " uri))
 	    (setq buffer-read-only t)))))))
-
-(defun identica-expand-shorturl (url)
-  "Return the redirected URL, or the original url if not found."
-  (let ((temp-buf (get-buffer-create "*HTTP headers*")))
-    (set-buffer temp-buf)
-    (erase-buffer)
-    (goto-char 0)
-    (let*
-        ((url (replace-regexp-in-string "http://" "" url))
-         (host (substring url 0 (string-match "/" url)))
-         (file (if (string-match "/" url)
-                   (substring url (string-match "/" url))
-                 "/"))
-         (tcp-connection (open-network-stream "Identica URLExpand"
-                                              temp-buf host 80))
-         (request (concat "GET http://" url " HTTP/1.1\r\n"
-			  "Host:" host "\r\n"
-			  "User-Agent: " (identica-user-agent) "\r\n"
-			  "Authorization: None\r\n"
-			  "Accept-Charset: utf-8;q=0.7,*;q=0.7\r\n\r\n")))
-      (set-marker (process-mark tcp-connection) (point-min))
-      (set-process-sentinel tcp-connection 'identica-http-headers-sentinel)
-      (process-send-string tcp-connection request)
-      (sit-for 2)
-      (let ((location (identica-get-location-from-header (concat "http://" host file) tcp-connection)))
-        (delete-process tcp-connection)
-        (kill-buffer temp-buf)
-        location))))
-
-(defun identica-http-headers-sentinel (process string)
-  "Process the results from the efine network connection."
-
-  )
-
-(defun identica-get-location-from-header (url process)
-  "Parse HTTP header."
-  (let ((buffer)
-	(headers)
-        (location))
-    (setq buffer (get-buffer-create "*HTTP headers*"))
-    (set-buffer buffer)
-    (goto-char 0)
-    (setq location
-	  (if (search-forward-regexp "^Location: \\(http://.*?\\)\r?$" nil t)
-	      (match-string-no-properties 1)
-	    url))
-    (replace-regexp-in-string "\r" "" location)))
 
 ;;;
 ;;; Commands
@@ -2140,14 +1741,6 @@ un-highlight all other entries."
       (and (equal tag (car array))
 	   (cadr array))))
 
-(defun identica-get-status-url (id)
-  "Generate status URL."
-  (format "https://%s/notice/%s" (sn-account-server sn-current-account) id))
-
-(defun identica-get-context-url (id)
-  "Generate status URL."
-  (format "https://%s/conversation/%s" (sn-account-server sn-current-account) id))
-
 (defun identica-retrieve-configuration ()
   "Retrieve the configuration for the current statusnet server."
   (identica-http-get (sn-account-server sn-current-account) (sn-account-auth-mode sn-current-account)
@@ -2165,10 +1758,6 @@ un-highlight all other entries."
 	(when (> (string-to-number textlimit-value) 0)
 	  (setf (sn-account-textlimit sn-current-account) (string-to-number textlimit-value))))))
   (identica-start))
-
-(defun identica-get-config-url ()
-  "Generate configuration URL."
-  (format "http://%s/api/statusnet/config.xml" (sn-account-server sn-current-account)))
 
 (defun identica-toggle-activate-buffer ()
   (interactive)
