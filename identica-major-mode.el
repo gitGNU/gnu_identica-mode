@@ -113,6 +113,9 @@
       (define-key km "\C-c\C-p" 'identica-toggle-proxy)
       nil))
 
+(defvar identica-mode-hook nil
+  "Identica-mode hook.")
+
 (defun identica-mode ()
   "Major mode for Identica."
   (interactive)

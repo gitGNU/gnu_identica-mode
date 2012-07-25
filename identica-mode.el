@@ -157,21 +157,6 @@ If non-nil, dents over this amount will bre removed.")
   :group 'identica-mode)
 
 
-(defcustom statusnet-server "identi.ca"
-  "Statusnet instance url."
-  :type 'string
-  :group 'identica-mode)
-
-(defcustom statusnet-server-textlimit 140
-  "Number of characters allowed in a status."
-  :type 'integer
-  :group 'identica-mode)
-
-(defcustom statusnet-port 80
-  "Port on which StatusNet instance listens."
-  :type 'integer
-  :group 'identica-mode)
-
 (defcustom identica-default-timeline "friends_timeline"
   "Default timeline to retrieve."
   :type 'string
@@ -268,25 +253,6 @@ Initialize the global method with the default, or with METHOD, if present."
   (unless method
     (setq method "friends_timeline"))
   (get-buffer-create identica-buffer))
-
-(defstruct (statusnet-account
-	    (:conc-name sn-account-))
-  "Container for account information."
-  server ; string
-  port ; integer
-  username ; string
-  auth-mode ; string, either "password" or "oauth"
-  password ; string
-  textlimit ; integer
-  oauth-data ; statusnet-account-oauth-data
-  last-timeline-retrieved ; string
-)
-
-(defvar statusnet-accounts nil
-  "A list of login credentials for statusnet instances.")
-
-(defvar sn-current-account nil
-  "A pointer to the statusnet account being processed.")
 
 (defvar identica-timeline-data nil)
 (defvar identica-timeline-last-update nil)
@@ -402,17 +368,10 @@ of identica-stripe-face."
 	      timeline-url))
       (debug-print mode-name))))
 
-(defvar identica-mode-hook nil
-  "Identica-mode hook.")
-
 (defcustom identica-load-hook nil
   "Hook that is run after identica-mode.el has been loaded."
   :group 'identica-mode
   :type 'hook)
-
-(defun identica-kill-buffer-function ()
-  (when (eq major-mode 'identica-mode)
-    (identica-stop)))
 
 (defun merge-text-attribute (start end new-face attribute)
   "Merge the ATTRIBUTE of NEW-FACE into the text between START and END.

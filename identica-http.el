@@ -51,6 +51,41 @@
   :group 'identica-mode)
 
 
+(defcustom statusnet-server "identi.ca"
+  "Statusnet instance url."
+  :type 'string
+  :group 'identica-mode)
+
+(defcustom statusnet-server-textlimit 140
+  "Number of characters allowed in a status."
+  :type 'integer
+  :group 'identica-mode)
+
+(defcustom statusnet-port 80
+  "Port on which StatusNet instance listens."
+  :type 'integer
+  :group 'identica-mode)
+
+(defstruct (statusnet-account
+	    (:conc-name sn-account-))
+  "Container for account information."
+  server ; string
+  port ; integer
+  username ; string
+  auth-mode ; string, either "password" or "oauth"
+  password ; string
+  textlimit ; integer
+  oauth-data ; statusnet-account-oauth-data
+  last-timeline-retrieved ; string
+)
+
+(defvar sn-current-account nil
+  "A pointer to the statusnet account being processed.")
+
+(defvar statusnet-accounts nil
+  "A list of login credentials for statusnet instances.")
+
+
 
 ;;; Proxy
 (defvar identica-proxy-use nil)

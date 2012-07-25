@@ -505,3 +505,7 @@ un-highlight all other entries."
   ;; Start the major mode!
   (identica-mode))
 
+(defun identica-kill-buffer-function ()
+  (when (eq major-mode 'identica-mode)
+    (identica-stop)))
+
