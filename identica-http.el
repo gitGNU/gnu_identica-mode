@@ -40,6 +40,10 @@
 ;; TAKE A LOOK:
 ;; (1) A parentezised string as parameter?
 
+(require 'url)
+(require 'url-http)
+(require 'identica-misc)
+
 (defvar identica-http-buffer nil
   "Pointer to the current http response buffer.")
 
@@ -333,17 +337,17 @@ The variable `identica-http-error-data' is stored if errors found, if not is set
       
 
 
-(defvar identica-http-sentinel nil
-  "This is used for `identica-http-nothing-sentinel'. If this variable has a function, it will be called after
+(defvar identica-http-get-sentinel nil
+  "This is used for `identica-http-get-nothing-sentinel'. If this variable has a function, it will be called after
 the sentinel finish checking all the HTTP errors and no errors found.")
 
-(defun identica-http-nothing-sentinel (status &rest parameters)
-  "This sentinel checks for HTTP errors and then calls the function stored at `identica-http-sentinel'
+(defun identica-http-get-nothing-sentinel (status &rest parameters)
+  "This sentinel checks for HTTP errors and then calls the function stored at `identica-http-post-sentinel'
 if no erros found."
   (if (identica-http-check-errors status)      
       (message identica-http-error-data)
-    (when identica-http-sentinel
-      (funcall identica-http-sentinel parameters)
+    (when identica-http-get-sentinel
+      (funcall identica-http-get-sentinel parameters)
       )
     )
   )
@@ -359,7 +363,7 @@ PARAMETERS arguments specify the additional parameters required by
 the above METHOD.  It is specified as an alist with parameter name and its corresponding value.
 
 SENTINEL represents the callback function to be called after the http response is completely retrieved.
-If SENTINEL is nil, the following sentinel is used:`identica-http-nothing-sentinel'.
+If SENTINEL is nil, the following sentinel is used:`identica-http-get-nothing-sentinel'.
 
 SENTINEL-ARGUMENTS is the list of arguments (if any) of the SENTINEL
 procedure.
@@ -370,7 +374,7 @@ The variable `sn-current-account' gives the following important information:
 * Username and password if necessary
 * If oauth is used for authentication(instead of username and pass.)
 "
-  (or sentinel (setq sentinel 'identica-http-nothing-sentinel))
+  (or sentinel (setq sentinel 'identica-http-get-nothing-sentinel))
   (let* ((server (sn-account-server sn-current-account))
 	 (auth-mode (sn-account-auth-mode sn-current-account))
 	 (url (identica-make-url server method-class method parameters))
@@ -388,14 +392,14 @@ The variable `sn-current-account' gives the following important information:
       (kill-buffer identica-http-buffer))
     (setq identica-http-buffer
           (identica-url-retrieve url sentinel method-class
-                                 method parameters sentinel-arguments auth-mode))
+                                 method parameters sentinel-arguments))
     ))
 
 (defun identica-url-retrieve
-  (url sentinel method-class method parameters sentinel-arguments &optional auth-mode unhex-workaround)
+  (url sentinel method-class method parameters sentinel-arguments &optional unhex-workaround)
   "Call url-retrieve or oauth-url-retrieve dsepending on the mode.
 Apply url-unhex-string workaround if necessary."
-  (if (and (equal auth-mode "oauth")
+  (if (and (equal (sn-account-auth-mode sn-current-account) "oauth")
 	   (sn-oauth-access-token (sn-account-oauth-data sn-current-account)))
       (if unhex-workaround
 	  (flet ((oauth-extract-url-params
@@ -407,7 +411,7 @@ bug in url-unhex-string present in emacsen previous to 23.3."
 		      (mapcar (lambda (pair)
 				`(,(car pair) . ,(w3m-url-decode-string (cadr pair))))
 			      (url-parse-query-string (substring url (match-end 0))))))))
-	    (identica-url-retrieve url sentinel method-class method parameters sentinel-arguments auth-mode))
+	    (identica-url-retrieve url sentinel method-class method parameters sentinel-arguments))
 	(oauth-url-retrieve (sn-oauth-access-token (sn-account-oauth-data sn-current-account)) url sentinel
 			    (append (list method-class method parameters)
 				    sentinel-arguments)))
@@ -415,6 +419,23 @@ bug in url-unhex-string present in emacsen previous to 23.3."
 		  (append (list method-class method parameters)
 			  sentinel-arguments))))
 
+(defvar identica-http-post-sentinel nil
+    "This is used for `identica-http-post-nothing-sentinel'. If this variable has a function, it will be called after
+the sentinel finish checking all the HTTP errors and no errors found.")
+
+(defun identica-http-post-nothing-sentinel (status &rest parameters)
+  "This sentinel checks for HTTP errors and then calls the function stored at `identica-http-post-sentinel'
+if no erros found."
+  (if (identica-http-check-errors status)
+      (message identica-http-error-data)
+    (when identica-http-post-sentinel
+      (funcall identica-http-post-sentinel parameters)
+      )
+    )
+  ;; This is not necessary because it has to be in the function stored in `identica-http-post-sentinel'.
+  ;; (identica-display-success-messages
+  ;;  (message (or success-message "Success: Post")))
+  )
 (defun identica-http-post
   (method-class method &optional parameters sentinel sentinel-arguments)
   "Send HTTP POST request to statusnet server.
@@ -448,7 +469,7 @@ PARAMETERS is alist of URI parameters. ex) ((\"mode\" . \"view\") (\"page\" . \"
       (delete-process identica-http-buffer)
       (kill-buffer identica-http-buffer))
     (identica-url-retrieve url sentinel method-class method parameters
-			   sentinel-arguments (sn-account-auth-mode sn-current-account) identica-unhex-broken)))
+			   sentinel-arguments identica-unhex-broken)))
 
 (defun identica-get-status-url (id)
   "Generate status URL."
@@ -513,3 +534,39 @@ must be worked around when using oauth.")
   (autoload 'make-oauth-access-token "oauth"))
 
 
+(defun identica-http-init-variables()
+  "Init any variable necessary to make identica-http works fine and happy.
+
+You have to use this functions first if you want to use any identica-http's function.
+
+ (Why I don't call this function at loading time? That's a good question...) 
+"
+  ;; Create an account object based on the various custom variables.
+  ;; Insert it into the statusnet accounts list.
+  (setq statusnet-accounts
+	(cons (make-statusnet-account
+	       :server statusnet-server
+	       :port statusnet-port
+	       :username identica-username
+	       :auth-mode identica-auth-mode
+	       :password identica-password
+	       :textlimit statusnet-server-textlimit
+	       :oauth-data (if (string= identica-auth-mode "oauth")
+			       (make-statusnet-oauth-data
+				:consumer-key identica-mode-oauth-consumer-key
+				:consumer-secret identica-mode-oauth-consumer-secret
+				:request-url statusnet-request-url
+				:access-url statusnet-access-url
+				:authorize-url statusnet-authorize-url
+				:access-token nil)
+			     nil)
+	       :last-timeline-retrieved nil)
+	      statusnet-accounts))
+  (setq sn-current-account (car statusnet-accounts))
+  )
+
+;;
+;; If you want to call this when loading identica-http, uncomment the following line:
+;; (identica-http-init-variables)
+
+(provide 'identica-http)

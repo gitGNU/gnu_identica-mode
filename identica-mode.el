@@ -103,10 +103,9 @@
 (require 'xml)
 (require 'parse-time)
 (require 'longlines)
-(require 'url)
-(require 'url-http)
 (require 'json)
 (require 'image)
+(require 'identica-http)
 
 (defconst identica-mode-version "1.2.1")
 
@@ -565,29 +564,7 @@ prompt; \"Down\" counts down from (sn-account-textlimit sn-current-account); \"U
   ;; make face properties nonsticky
   (nconc text-property-default-nonsticky
 	 '((face . t)(mouse-face . t)(uri . t)(source . t)(uri-in-text . t)))
-
-  ;; Create an account object based on the various custom variables.
-  ;; Insert it into the statusnet accounts list.
-  (setq statusnet-accounts
-	(cons (make-statusnet-account
-	       :server statusnet-server
-	       :port statusnet-port
-	       :username identica-username
-	       :auth-mode identica-auth-mode
-	       :password identica-password
-	       :textlimit statusnet-server-textlimit
-	       :oauth-data (if (string= identica-auth-mode "oauth")
-			       (make-statusnet-oauth-data
-				:consumer-key identica-mode-oauth-consumer-key
-				:consumer-secret identica-mode-oauth-consumer-secret
-				:request-url statusnet-request-url
-				:access-url statusnet-access-url
-				:authorize-url statusnet-authorize-url
-				:access-token nil)
-			     nil)
-	       :last-timeline-retrieved nil)
-	      statusnet-accounts))
-  (setq sn-current-account (car statusnet-accounts)))
+  (identica-http-init-variables))
 
 (provide 'identica-mode)
 (add-hook 'identica-load-hook 'identica-autoload-oauth)
