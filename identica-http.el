@@ -308,6 +308,31 @@ A simbol translation is done for the PARAMETERS using `identica-percent-encode'.
 		     parameters
 		     "&")))))
 
+(defvar identica-http-error-data nil
+  "If there is an error in HTTP, this variable is non-nil and it has the information
+and explanation of the error.")
+
+(defun identica-http-check-errors (status)
+  "Check for HTTP errors and return a string explaining what happened.
+If no error found, return nil.
+
+The variable `identica-http-error-data' is stored if errors found, if not is setted to nil."
+  (let ((error-object (assoc-workaround :error status)))
+    (if error-object
+	(let ((error-data (format "%s" (caddr error-object)))) ;; We have an error!
+	  (cond
+	   ((string= error-data "deleted\n")  
+	    (setq identica-http-error-data "no info... \"deleted\"?"))
+	   ((and (string= error-data "404") method 
+		 (= 13 (string-match "/" method)))
+	    (setq identica-http-error-data ("No Such User: %s" (substring method 14))))
+	   (t
+	    (setq identica-http-error-data (format "Identica-Mode: Network error:%s" status)))))
+      (setq identica-http-error-data nil))
+    identica-http-error-data));; No error found.
+      
+
+
 (defvar identica-http-sentinel nil
   "This is used for `identica-http-nothing-sentinel'. If this variable has a function, it will be called after
 the sentinel finish checking all the HTTP errors and no errors found.")
@@ -315,7 +340,12 @@ the sentinel finish checking all the HTTP errors and no errors found.")
 (defun identica-http-nothing-sentinel (status &rest parameters)
   "This sentinel checks for HTTP errors and then calls the function stored at `identica-http-sentinel'
 if no erros found."
-  (funcall identica-http-sentinel parameters)
+  (if (identica-http-check-errors status)      
+      (message identica-http-error-data)
+    (when identica-http-sentinel
+      (funcall identica-http-sentinel parameters)
+      )
+    )
   )
 
 (defun identica-http-get

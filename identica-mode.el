@@ -546,12 +546,6 @@ prompt; \"Down\" counts down from (sn-account-textlimit sn-current-account); \"U
 	       (clear-image-cache)
 	       ))))))
 
-(defun assoc-workaround (tag array)
-  "Workaround odd semi-associative array returned by url-http."
-  (or (assoc tag array)
-      (and (equal tag (car array))
-	   (cadr array))))
-
 (defun identica-mode-line-buffer-identification ()
   (if identica-active-mode
       identica-modeline-active
