@@ -218,34 +218,6 @@ The available choices are:
   :type 'string
   :group 'identica-mode)
 
-(defcustom identica-blacklist '()
-  "List of regexes used to filter statuses, evaluated after status formatting is applied."
-  :type 'string
-  :group 'identica-mode)
-
-(defcustom identica-status-format "%i %s,  %@:\n  %t // from %f%L%r\n\n"
-  "The format used to display the status updates."
-  :type 'string
-  :group 'identica-mode)
-;; %s - screen_name
-;; %S - name
-;; %i - profile_image
-;; %d - description
-;; %l - location
-;; %L - " [location]"
-;; %r - in reply to status
-;; %u - url
-;; %j - user.id
-;; %p - protected?
-;; %c - created_at (raw UTC string)
-;; %C{time-format-str} - created_at (formatted with time-format-str)
-;; %@ - X seconds ago
-;; %t - text
-;; %' - truncated
-;; %h - favorited
-;; %f - source
-;; %# - id
-
 (defvar identica-buffer "*identica*")
 (defun identica-buffer (&optional method)
   "Create a buffer for use by identica-mode.
@@ -297,9 +269,6 @@ of identica-stripe-face."
 (defvar identica-tmp-dir
   (expand-file-name (concat "identicamode-images-" (user-login-name))
 		    temporary-file-directory))
-
-(defvar identica-icon-mode nil "You MUST NOT CHANGE this variable directory.  You should change through function'identica-icon-mode'.")
-(make-variable-buffer-local 'identica-icon-mode)
 
 (defvar identica-image-stack nil)
 
@@ -353,21 +322,6 @@ of identica-stripe-face."
       `(ucs-to-char ,num)
     `(decode-char 'ucs ,num)))
 
-(defvar identica-mode-string identica-method)
-
-(defun identica-set-mode-string (loading)
-  (with-current-buffer (identica-buffer)
-    (let ((timeline-url
-	   (concat (or identica-remote-server
-		       (sn-account-server sn-current-account))
-		   "/" identica-method)))
-      (setq mode-name
-	    (if loading (concat
-			 (if (stringp loading) loading "loading")
-			 " " timeline-url "...")
-	      timeline-url))
-      (debug-print mode-name))))
-
 (defcustom identica-load-hook nil
   "Hook that is run after identica-mode.el has been loaded."
   :group 'identica-mode
@@ -392,205 +346,6 @@ we are interested in."
         (add-text-properties start next-change
 			     (list 'face (list attribute bg))))
       (setq start next-change))))
-
-(defun identica-render-timeline ()
-  (with-current-buffer (identica-buffer)
-    (let ((point (point))
-	  (end (point-max))
-          (wrapped (cond (longlines-mode 'longlines-mode)
-                         (visual-line-mode 'visual-line-mode)
-                         (t nil)))
-	  (stripe-entry nil))
-
-      (setq buffer-read-only nil)
-      (erase-buffer)
-      (when wrapped (funcall wrapped -1))
-      (mapc (lambda (status)
-              (let ((before-status (point-marker))
-                    (blacklisted 'nil)
-                    (formatted-status (identica-format-status
-                                       status identica-status-format)))
-                (mapc (lambda (regex)
-                        (when (string-match-p regex formatted-status)
-                          (setq blacklisted 't)))
-                      identica-blacklist)
-                (unless blacklisted
-                  (when identica-enable-striping
-                    (setq stripe-entry (not stripe-entry)))
-                  (insert formatted-status)
-                  (when (not wrapped)
-                    (fill-region-as-paragraph
-                     (save-excursion (beginning-of-line -1) (point)) (point)))
-                  (insert-and-inherit "\n")
-                  ;; Apply highlight overlays to status
-		  (when (or (string-equal (sn-account-username sn-current-account)
-					  (assoc-default 'in-reply-to-screen-name status))
-                            (string-match
-			     (concat "@" (sn-account-username sn-current-account)
-				     "\\([^[:word:]_-]\\|$\\)") (assoc-default 'text status)))
-		    (merge-text-attribute before-status (point) 'identica-reply-face :background))
-                  (when (and identica-enable-highlighting
-			     (memq (assoc-default 'id status) identica-highlighted-entries))
-		    (merge-text-attribute before-status (point) 'identica-highlight-face :background))
-                  (when stripe-entry
-		    (merge-text-attribute before-status (point) 'identica-stripe-face :background))
-                  (when identica-oldest-first (goto-char (point-min))))))
-            identica-timeline-data)
-      (when (and identica-image-stack window-system) (clear-image-cache))
-      (when wrapped (funcall wrapped 1))
-      (setq buffer-read-only t)
-      (debug-print (current-buffer))
-      (goto-char (+ point (if identica-scroll-mode (- (point-max) end) 0)))
-      (identica-set-mode-string nil)
-      (setf (sn-account-last-timeline-retrieved sn-current-account) identica-method)
-      (if transient-mark-mode (deactivate-mark)))))
-
-(defun identica-format-status (status format-str)
-  (flet ((attr (key)
-	       (assoc-default key status))
-	 (profile-image
-	  ()
-	  (let ((profile-image-url (attr 'user-profile-image-url)))
-	    (when (string-match "/\\([^/?]+\\)\\(?:\\?\\|$\\)" profile-image-url)
-	      (let ((filename (match-string-no-properties 1 profile-image-url))
-		    (xfilename (match-string-no-properties 0 profile-image-url)))
-		;; download icons if does not exist
-		(unless (file-exists-p (concat identica-tmp-dir filename))
-		  (if (file-exists-p (concat identica-tmp-dir xfilename))
-		      (setq filename xfilename)
-		    (setq filename nil)
-		    (add-to-list 'identica-image-stack profile-image-url)))
-		(when (and identica-icon-mode filename)
-		  (let ((avatar (create-image (concat identica-tmp-dir filename))))
-		    ;; Make sure the avatar is 48 pixels (which it should already be!, but hey...)
-		    ;; For offenders, the top left slice of 48 by 48 pixels is displayed
-		    ;; TODO: perhaps make this configurable?
-		    (insert-image avatar nil nil `(0 0 48 48)))
-		  nil))))))
-    (let ((cursor 0)
-	  (result ())
-	  c
-	  found-at)
-      (setq cursor 0)
-      (setq result '())
-      (while (setq found-at (string-match "%\\(C{\\([^}]+\\)}\\|[A-Za-z#@']\\)" format-str cursor))
-	(setq c (string-to-char (match-string-no-properties 1 format-str)))
-	(if (> found-at cursor)
-	    (push (substring format-str cursor found-at) result)
-	  "|")
-	(setq cursor (match-end 1))
-
-	(case c
-	  ((?s)                         ; %s - screen_name
-	   (push (attr 'user-screen-name) result))
-	  ((?S)                         ; %S - name
-	   (push (attr 'user-name) result))
-	  ((?i)                         ; %i - profile_image
-	   (push (profile-image) result))
-	  ((?d)                         ; %d - description
-	   (push (attr 'user-description) result))
-	  ((?l)                         ; %l - location
-	   (push (attr 'user-location) result))
-	  ((?L)                         ; %L - " [location]"
-	   (let ((location (attr 'user-location)))
-	     (unless (or (null location) (string= "" location))
-	       (push (concat " [" location "]") result)) ))
-	  ((?u)                         ; %u - url
-	   (push (attr 'user-url) result))
-          ((?U)                         ; %U - profile url
-           (push (cadr (split-string (attr 'user-profile-url) "https*://")) result))
-	  ((?j)                         ; %j - user.id
-	   (push (format "%d" (attr 'user-id)) result))
-	  ((?r)                         ; %r - in_reply_to_status_id
-	   (let ((reply-id (attr 'in-reply-to-status-id))
-		 (reply-name (attr 'in-reply-to-screen-name)))
-	     (unless (or (null reply-id) (string= "" reply-id)
-			 (null reply-name) (string= "" reply-name))
-	       (let ((in-reply-to-string (format "in reply to %s" reply-name))
-		     (url (identica-get-status-url reply-id)))
-		 (add-text-properties
-		  0 (length in-reply-to-string)
-		  `(mouse-face highlight
-			       face identica-uri-face
-			       uri ,url)
-		  in-reply-to-string)
-		 (push (concat " " in-reply-to-string) result)))))
-	  ((?p)                         ; %p - protected?
-	   (let ((protected (attr 'user-protected)))
-	     (when (string= "true" protected)
-	       (push "[x]" result))))
-	  ((?c)                     ; %c - created_at (raw UTC string)
-	   (push (attr 'created-at) result))
-	  ((?C) ; %C{time-format-str} - created_at (formatted with time-format-str)
-	   (push (identica-local-strftime
-		       (or (match-string-no-properties 2 format-str) "%H:%M:%S")
-		       (attr 'created-at))
-		      result))
-	  ((?@)                         ; %@ - X seconds ago
-	   (let ((created-at
-		  (apply
-		   'encode-time
-		   (parse-time-string (attr 'created-at))))
-		 (now (current-time)))
-	     (let ((secs (+ (* (- (car now) (car created-at)) 65536)
-			    (- (cadr now) (cadr created-at))))
-		   time-string url)
-	       (setq time-string
-		     (cond ((< secs 5) "less than 5 seconds ago")
-			   ((< secs 10) "less than 10 seconds ago")
-			   ((< secs 20) "less than 20 seconds ago")
-			   ((< secs 30) "half a minute ago")
-			   ((< secs 60) "less than a minute ago")
-			   ((< secs 150) "1 minute ago")
-			   ((< secs 2400) (format "%d minutes ago"
-						  (/ (+ secs 30) 60)))
-			   ((< secs 5400) "about 1 hour ago")
-			   ((< secs 84600) (format "about %d hours ago"
-						   (/ (+ secs 1800) 3600)))
-			   (t (format-time-string "%I:%M %p %B %d, %Y" created-at))))
-	       (setq url (identica-get-status-url (attr 'id)))
-	       ;; make status url clickable
-	       (add-text-properties
-		0 (length time-string)
-		`(mouse-face highlight
-			     face identica-uri-face
-			     uri ,url)
-		time-string)
-	       (push time-string result))))
-	  ((?t)                         ; %t - text
-	   (push                   ;(clickable-text)
-	    (attr 'text)
-	    result))
-	  ((?')                         ; %' - truncated
-	   (let ((truncated (attr 'truncated)))
-	     (when (string= "true" truncated)
-	       (push "..." result))))
-	  ((?f)                         ; %f - source
-	   (push (attr 'source) result))
-          ((?F)                         ; %F - ostatus-aware source
-           (push (if (string= (attr 'source) "ostatus")
-                     (cadr (split-string (attr 'user-profile-url) "https*://"))
-                   (attr 'source)) result))
-	  ((?#)                         ; %# - id
-	   (push (format "%d" (attr 'id)) result))
-	  ((?x)                         ; %x - conversation id (conteXt) - default 0
-	   (push (attr 'conversation-id) result))
-	  ((?h)
-	   (let ((likes (attr 'favorited)))
-	     (when (string= "true" likes)
-	       (push (propertize "❤" 'face 'identica-heart-face) result))))
-	  (t
-	   (push (char-to-string c) result))))
-      (push (substring format-str cursor) result)
-      (let ((formatted-status (apply 'concat (nreverse result))))
-	(add-text-properties 0 (length formatted-status)
-			     `(username, (attr 'user-screen-name)
-                                         id, (attr 'id)
-                                         text, (attr 'text)
-                                         profile-url, (attr 'user-profile-url)
-                                         conversation-id, (attr 'conversation-id))
-			     formatted-status)
-	formatted-status))))
 
 (defun identica-http-post-default-sentinel
   (&optional status method-class method parameters success-message)

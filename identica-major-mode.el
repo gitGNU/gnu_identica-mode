@@ -28,6 +28,9 @@
 
 (defvar identica-mode-map (make-sparse-keymap "Identi.ca"))
 (defvar menu-bar-identica-mode-menu nil)
+(defvar identica-mode-string identica-method)
+(defvar identica-icon-mode nil "You MUST NOT CHANGE this variable directory.  You should change through function'identica-icon-mode'.")
+(make-variable-buffer-local 'identica-icon-mode)
 
 ;; Menu
 (unless menu-bar-identica-mode-menu
@@ -390,6 +393,21 @@ static char * statusnet_off_xpm[] = {
           (if username
 	      (identica-update-status identica-update-status-method
 				      (concat "@" username " ") id)))))))
+
+
+(defun identica-set-mode-string (loading)
+  (with-current-buffer (identica-buffer)
+    (let ((timeline-url
+	   (concat (or identica-remote-server
+		       (sn-account-server sn-current-account))
+		   "/" identica-method)))
+      (setq mode-name
+	    (if loading (concat
+			 (if (stringp loading) loading "loading")
+			 " " timeline-url "...")
+	      timeline-url))
+      (debug-print mode-name))))
+
 
 
 (provide 'identica-major-mode)
