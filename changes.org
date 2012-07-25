@@ -1,0 +1,35 @@
+* Wich Version I changed?
+I have changed from commit 30ffd973a7cae9e7deae5a075e80f5827af3df2a. 
+
+Before that, the software has only one main library called =identica-mode.el=. 
+This library has almost 2000 lines of code with everything needed to start identica-mode.
+
+* Why I did these changes?
+** Modularization
+The main purpose of these changes is to accomplish one software engineering principle: /modularization/.
+
+The main lema "divide and conquer" is what we must think when we create a software.
+So we divide and merge like this:
+- up-to-bottom :: Starting from a big problem dividing it into little easier problems.
+- bottom-to-up :: Facing little problems, finding their solutions and finally join everything to solve a big problem.
+
+This principle is very important, for example:
+- is the justification of why exists lots of files ".el" for making a program.
+- is the justification of why we have to make lots of functions for making just one: the =(identica)= function.
+
+
+** Where is this? Where is that?
+Another little problems that arise is when you try to find something. "Where is the function that print a dent in the buffer?" for example.
+
+Finding something in a big file is difficult, but finding in lots of files with correct names, is easier.
+
+** A bug somewhere... 
+Try to find bug and debuging becomes easier.
+
+If you have a problems, you will know wich module is the one is failing. So you just have to debug that one!
+
+** How easy is changing something
+A change in the interface will involve only the major mode! If everything is mixed, just for adding a new icon(or a whole new feature) will become a big task!
+   1. Recognize what to change(which functions that already exists I have to read or change?)
+   2. Change them and see what has changed(What doesn't work anymore?)
+
