@@ -319,6 +319,7 @@ Known Statusnet issue.  Mostly harmless except if in tags."
   text)
 
 (defun identica-make-source-pretty (source)
+  "Remove hyperlinks tags and make the caption clickable."
   (when (string-match "<a href=\"\\(.*\\)\">\\(.*\\)</a>" source)
     (let ((uri (match-string-no-properties 1 source))
 	  (caption (match-string-no-properties 2 source)))
@@ -541,34 +542,38 @@ A status format is an alist with a symbol-name and data."
       (setf (sn-account-last-timeline-retrieved sn-current-account) identica-method)
       (if transient-mark-mode (deactivate-mark)))))
 
+(defun identica-profile-image (profile-image-url)
+  (when (string-match "/\\([^/?]+\\)\\(?:\\?\\|$\\)" profile-image-url)
+    (let ((filename (match-string-no-properties 1 profile-image-url))
+	  (xfilename (match-string-no-properties 0 profile-image-url)))
+      ;; download icons if does not exist
+      (unless (file-exists-p (concat identica-tmp-dir filename))
+	(if (file-exists-p (concat identica-tmp-dir xfilename))
+	    (setq filename xfilename)
+	  (setq filename nil)
+	  (add-to-list 'identica-image-stack profile-image-url)))
+      (when (and identica-icon-mode filename)
+	(let ((avatar (create-image (concat identica-tmp-dir filename))))
+	  ;; Make sure the avatar is 48 pixels (which it should already be!, but hey...)
+	  ;; For offenders, the top left slice of 48 by 48 pixels is displayed
+	  ;; TODO: perhaps make this configurable?
+	  (insert-image avatar nil nil `(0 0 48 48)))
+	nil))))
+
 (defun identica-format-status (status format-str)
+  "Create a string with information from STATUS formatted acording to FORMAT-STR. 
+
+*This function only generates the strings, doesn't insert it in any buffer!*"
   (flet ((attr (key)
-	       (assoc-default key status))
-	 (profile-image
-	  ()
-	  (let ((profile-image-url (attr 'user-profile-image-url)))
-	    (when (string-match "/\\([^/?]+\\)\\(?:\\?\\|$\\)" profile-image-url)
-	      (let ((filename (match-string-no-properties 1 profile-image-url))
-		    (xfilename (match-string-no-properties 0 profile-image-url)))
-		;; download icons if does not exist
-		(unless (file-exists-p (concat identica-tmp-dir filename))
-		  (if (file-exists-p (concat identica-tmp-dir xfilename))
-		      (setq filename xfilename)
-		    (setq filename nil)
-		    (add-to-list 'identica-image-stack profile-image-url)))
-		(when (and identica-icon-mode filename)
-		  (let ((avatar (create-image (concat identica-tmp-dir filename))))
-		    ;; Make sure the avatar is 48 pixels (which it should already be!, but hey...)
-		    ;; For offenders, the top left slice of 48 by 48 pixels is displayed
-		    ;; TODO: perhaps make this configurable?
-		    (insert-image avatar nil nil `(0 0 48 48)))
-		  nil))))))
+	       (assoc-default key status)))	 
     (let ((cursor 0)
 	  (result ())
 	  c
 	  found-at)
       (setq cursor 0)
       (setq result '())
+
+      ;; Follow each "%?" element in FORMAT-STR and elaborate a list called "result" in the order given by that format.
       (while (setq found-at (string-match "%\\(C{\\([^}]+\\)}\\|[A-Za-z#@']\\)" format-str cursor))
 	(setq c (string-to-char (match-string-no-properties 1 format-str)))
 	(if (> found-at cursor)
@@ -582,7 +587,7 @@ A status format is an alist with a symbol-name and data."
 	  ((?S)                         ; %S - name
 	   (push (attr 'user-name) result))
 	  ((?i)                         ; %i - profile_image
-	   (push (profile-image) result))
+	   (push (identica-profile-image (attr 'user-profile-image-url)) result))
 	  ((?d)                         ; %d - description
 	   (push (attr 'user-description) result))
 	  ((?l)                         ; %l - location
@@ -677,7 +682,10 @@ A status format is an alist with a symbol-name and data."
 	       (push (propertize "❤" 'face 'identica-heart-face) result))))
 	  (t
 	   (push (char-to-string c) result))))
+      
       (push (substring format-str cursor) result)
+
+      ;; Mix everything from result into a string and return it.
       (let ((formatted-status (apply 'concat (nreverse result))))
 	(add-text-properties 0 (length formatted-status)
 			     `(username, (attr 'user-screen-name)
