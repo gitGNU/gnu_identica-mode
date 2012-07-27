@@ -150,7 +150,204 @@ Known Statusnet issue.  Mostly harmless except if in tags."
   (while (re-search-forward "\r?\n[0-9a-z]+\r?\n" nil t)
     (replace-match "")))
 
-(defun identica-status-to-status-datum (status)
+;;
+;; TODO: It is not appropriate this functions here, they should be in the major mode file.
+;;
+(defun identica-add-screen-name-properties (user-screen-name)
+  "Return the string USER-SCREEN-NAME with faces and properties for displaying a screen name."
+  (add-text-properties
+   0 (length user-screen-name)
+   `(mouse-face highlight
+		face identica-username-face
+		uri ,user-profile-url
+		face identica-username-face)
+   user-screen-name))
+
+(defun identica-add-username-properties (user-name)
+  "Return the string USER-NAME with faces and properties for displaying a username."
+  (add-text-properties
+       0 (length user-name)
+       `(mouse-face highlight
+		    uri ,user-profile-url
+		    face identica-username-face)
+       user-name))
+
+(defconst identica-screen-name-regexp "@\\([_[:word:]0-9]+\\)"
+  "Regexp for user-names.")
+
+(defconst identica-group-name-regexp "!\\([_[:word:]0-9\-]+\\)"
+  "Regexp for group-names.")
+  
+(defconst identica-tag-name-regexp "#\\([_[:word:]0-9\-]+\\)"
+  "Regexp for tag-names.")
+
+(defconst identica-ur1-regexp "ur1\.ca/[a-z0-9]+/?"
+  "ur1 shortener regexp.")
+
+(defconst identica-http-url-regexp "https?://[-_.!~*'()[:word:]0-9\;/?:@&=+$,%#]+"
+  "Regexp for http URLs.")
+
+;;
+;; TODO: There's still repeated code! that has to be in a different function.
+;;
+(defun identica-find-and-add-screen-name-properties (text)
+  "Finds all texts with URI format and add link properties to them."  
+  (setq regex-index 0)
+  (while regex-index
+    (setq regex-index
+	  (string-match identica-screen-name-regexp
+			text
+			regex-index))
+    (when regex-index
+      (let* ((matched-string (match-string-no-properties 0 text))
+	     (screen-name (match-string-no-properties 1 text)))
+	(add-text-properties (+ 1 (match-beginning 0))
+			     (match-end 0)
+			     `(mouse-face
+			       highlight
+			       face identica-uri-face
+			       uri ,(concat "https://" (sn-account-server sn-current-account) "/" screen-name)
+			       uri-in-text ,(concat "https://" (sn-account-server sn-current-account) "/" screen-name)
+			       tag ,nil
+			       group ,nil)
+			     text))
+      (setq regex-index (match-end 0))))
+  text)
+
+
+(defun identica-find-and-add-group-name-properties (text)
+  "Finds all texts with URI format and add link properties to them."  
+  (setq regex-index 0)
+  (while regex-index
+    (setq regex-index
+	  (string-match identica-group-name-regexp
+			text
+			regex-index))
+    (when regex-index
+      (let* ((matched-string (match-string-no-properties 0 text))
+	     (group-name (match-string-no-properties 1 text)))
+	(add-text-properties (+ 1 (match-beginning 0))
+			     (match-end 0)
+			     `(mouse-face
+			       highlight
+			       face identica-uri-face
+			       uri ,(concat "https://" (sn-account-server sn-current-account) "/group/" group-name)
+			       uri-in-text ,(concat "https://" (sn-account-server sn-current-account) "/group/" group-name)
+			       tag ,nil
+			       group ,group-name)
+			     text))
+      (setq regex-index (match-end 0))))
+  text)
+
+(defun identica-find-and-add-tag-name-properties (text)
+  "Finds all texts with URI format and add link properties to them."  
+  (setq regex-index 0)
+  (while regex-index
+    (setq regex-index
+	  (string-match identica-tag-name-regexp
+			text
+			regex-index))
+    (when regex-index
+      (let* ((matched-string (match-string-no-properties 0 text))
+	     (tag-name (match-string-no-properties 1 text)))
+	(add-text-properties (+ 1 (match-beginning 0))
+			     (match-end 0)
+			     `(mouse-face
+			       highlight
+			       face identica-uri-face
+			       uri ,(concat "https://" (sn-account-server sn-current-account) "/tag/" tag-name)
+			       uri-in-text ,(concat "https://" (sn-account-server sn-current-account) "/tag/" tag-name)
+			       tag ,tag-name
+			       group ,nil)
+			     text))
+      (setq regex-index (match-end 0))))
+  text)
+
+(defun identica-find-and-add-ur1-properties (text)
+  "Finds all texts with URI format and add link properties to them."  
+  (setq regex-index 0)
+  (while regex-index
+    (setq regex-index
+	  (string-match identica-ur1-regexp
+			text
+			regex-index))
+    (when regex-index
+      (let* ((uri (match-string-no-properties 0 text)))
+	(add-text-properties (+ 1 (match-beginning 0))
+			     (match-end 0)
+			     `(mouse-face
+			       highlight
+			       face identica-uri-face
+			       uri ,uri
+			       uri-in-text ,uri
+			       tag ,nil
+			       group ,nil)
+			     text))
+      (setq regex-index (match-end 0))))
+  text)
+
+(defun identica-find-and-add-http-url-properties (text)
+  "Finds all texts with URI format and add link properties to them."  
+  (setq regex-index 0)
+  (while regex-index
+    (setq regex-index
+	  (string-match identica-http-url-regexp
+			text
+			regex-index))
+    (when regex-index
+      (let* ((uri (match-string-no-properties 0 text)))	     
+	(add-text-properties (+ 1 (match-beginning 0))
+			     (match-end 0)
+			     `(mouse-face
+			       highlight
+			       face identica-uri-face
+			       uri ,uri
+			       uri-in-text ,uri
+			       tag ,nil
+			       group ,nil)
+			     text))
+      (setq regex-index (match-end 0))))
+  text)
+
+(defun identica-find-and-add-all-properties (text)
+  "Finds all important text(like screen-names and tag-names), then add format and link properties to them."  
+  (setq text (identica-find-and-add-screen-name-properties text))
+  (setq text (identica-find-and-add-group-name-properties text))
+  (setq text (identica-find-and-add-tag-name-properties text))
+  (setq text (identica-find-and-add-ur1-properties text))
+  (setq text (identica-find-and-add-http-url-properties text))
+  text)
+
+(defun identica-make-source-pretty (source)
+  (when (string-match "<a href=\"\\(.*\\)\">\\(.*\\)</a>" source)
+    (let ((uri (match-string-no-properties 1 source))
+	  (caption (match-string-no-properties 2 source)))
+      (setq source caption)
+      (add-text-properties
+       0 (length source)
+       `(mouse-face highlight
+		    face identica-uri-face
+		    source ,source)
+       source)
+      source)))
+
+(defun identica-status-to-status-datum (status)  
+  "Transform a status(dent) in xml parsed tree into a data structure understandable by identica-mode.
+This structure is an alist that has the following keys:
+
+id text source created-at truncated favorited
+in-reply-to-status-id
+in-reply-to-screen-name
+conversation-id
+user-id user-name user-screen-name user-location
+user-description
+user-profile-image-url
+user-profile-url
+user-url
+user-protected 
+
+Observe that this was copied by the last part of this function."
+
   (flet ((assq-get (item seq)
 		   (car (cddr (assq item seq)))))
     (let* ((status-data (cddr status))
@@ -199,75 +396,16 @@ Known Statusnet issue.  Mostly harmless except if in tags."
       (setq user-profile-url (assq-get 'statusnet:profile_url user-data))
 
       ;; make username clickable
-      (add-text-properties
-       0 (length user-name)
-       `(mouse-face highlight
-		    uri ,user-profile-url
-		    face identica-username-face)
-       user-name)
+      (identica-add-username-properties user-name)
 
       ;; make screen-name clickable
-      (add-text-properties
-       0 (length user-screen-name)
-       `(mouse-face highlight
-		    face identica-username-face
-		    uri ,user-profile-url
-		    face identica-username-face)
-       user-screen-name)
-
+      (identica-add-screen-name-properties user-screen-name)
+      
       ;; make URI clickable
-      (setq regex-index 0)
-      (while regex-index
-	(setq regex-index
-	      (string-match "@\\([_[:word:]0-9]+\\)\\|!\\([_[:word:]0-9\-]+\\)\\|#\\([_[:word:]0-9\-]+\\)\\|\\(ur1\.ca/[a-z0-9]+/?\\|https?://[-_.!~*'()[:word:]0-9\;/?:@&=+$,%#]+\\)"
-			    text
-			    regex-index))
-	(when regex-index
-	  (let* ((matched-string (match-string-no-properties 0 text))
-		 (screen-name (match-string-no-properties 1 text))
-		 (group-name (match-string-no-properties 2 text))
-		 (tag-name (match-string-no-properties 3 text))
-		 (uri (match-string-no-properties 4 text)))
-	    (add-text-properties
-	     (if (or screen-name group-name tag-name)
-		 (+ 1 (match-beginning 0))
-	       (match-beginning 0))
-	     (match-end 0)
-	     (if (or screen-name group-name tag-name)
-		 `(mouse-face
-		   highlight
-		   face identica-uri-face
-		   uri ,(if screen-name
-			    (concat "https://" (sn-account-server sn-current-account) "/" screen-name)
-			  (if group-name
-			      (concat "https://" (sn-account-server sn-current-account) "/group/" group-name)
-			    (concat "https://" (sn-account-server sn-current-account) "/tag/" tag-name)))
-		   uri-in-text ,(if screen-name
-				    (concat "https://" (sn-account-server sn-current-account) "/" screen-name)
-				  (if group-name
-				      (concat "https://" (sn-account-server sn-current-account) "/group/" group-name)
-				    (concat "https://" (sn-account-server sn-current-account) "/tag/" tag-name)))
-                   tag ,tag-name
-                   group ,group-name)
-	       `(mouse-face highlight
-			    face identica-uri-face
-			    uri ,uri
-			    uri-in-text ,uri))
-	     text))
-	  (setq regex-index (match-end 0)) ))
-
+      (setq text (identica-find-and-add-all-properties text))
 
       ;; make source pretty and clickable
-      (when (string-match "<a href=\"\\(.*\\)\">\\(.*\\)</a>" source)
-	(let ((uri (match-string-no-properties 1 source))
-	      (caption (match-string-no-properties 2 source)))
-	  (setq source caption)
-	  (add-text-properties
-	   0 (length source)
-	   `(mouse-face highlight
-			face identica-uri-face
-			source ,source)
-	   source)))
+      (setq source (identica-make-source-pretty source))
 
       ;; save last update time
       (setq identica-timeline-last-update created-at)
@@ -287,6 +425,9 @@ Known Statusnet issue.  Mostly harmless except if in tags."
 	    user-protected)))))
 
 (defun identica-xmltree-to-status (xmltree)
+  "Change XMLtree parsed by `xml-parse-region' and return in status format.
+
+A status format is an alist with a symbol-name and data."
   (mapcar #'identica-status-to-status-datum
 	  ;; quirk to treat difference between xml.el in Emacs21 and Emacs22
 	  ;; On Emacs22, there may be blank strings
