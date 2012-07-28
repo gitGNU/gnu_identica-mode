@@ -241,7 +241,7 @@ we adjust point within the right frame."
     (delete-process identica-http-buffer)
     (kill-buffer identica-http-buffer))
   (setq identica-method (sn-account-last-timeline-retrieved sn-current-account))
-  (identica-set-mode-string nil)
+  (identica-set-mode-string nil identica-method (sn-account-server sn-current-account))
   (and identica-timer
        (cancel-timer identica-timer))
   (setq identica-timer nil)
@@ -509,3 +509,4 @@ un-highlight all other entries."
   (when (eq major-mode 'identica-mode)
     (identica-stop)))
 
+(provide 'identica-commands)

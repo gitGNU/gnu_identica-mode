@@ -24,13 +24,22 @@
 ;;
 
 
+(require 'identica-commands)
 ;;(require 'identica-mode)
 
 (defvar identica-mode-map (make-sparse-keymap "Identi.ca"))
 (defvar menu-bar-identica-mode-menu nil)
-(defvar identica-mode-string identica-method)
+(defvar identica-mode-string "")
 (defvar identica-icon-mode nil "You MUST NOT CHANGE this variable directory.  You should change through function'identica-icon-mode'.")
 (make-variable-buffer-local 'identica-icon-mode)
+
+(defcustom identica-soft-wrap-status t
+  "If non-nil, don't fill status messages in the timeline as
+paragraphs. Instead, use visual-line-mode or longlines-mode if
+  available to wrap messages.  This may work better for narrow
+  timeline windows."
+  :type 'boolean
+  :group 'identica-mode)
 
 ;; Menu
 (unless menu-bar-identica-mode-menu
@@ -122,7 +131,7 @@
 (defun identica-mode ()
   "Major mode for Identica."
   (interactive)
-  (buffer-disable-undo (identica-buffer))
+  (buffer-disable-undo (current-buffer))
   (use-local-map identica-mode-map)
   (setq major-mode 'identica-mode)
   (setq mode-name identica-mode-string)
@@ -137,7 +146,9 @@
           (visual-line-mode t)
 	(if (fboundp 'longlines-mode)
 	    (longlines-mode t))))
-  (add-hook 'kill-buffer-hook 'identica-kill-buffer-function)
+  ;; Carefull with this!!! `kill-buffer-hook' is used globally!!! :-S
+  ;; `identica-kill-buffer-function' must be reachable, if not you'll have a great emacs problem!
+  (add-hook 'kill-buffer-hook 'identica-kill-buffer-function) 
   (run-mode-hooks 'identica-mode-hook))
 
 
@@ -395,7 +406,11 @@ static char * statusnet_off_xpm[] = {
 				      (concat "@" username " ") id)))))))
 
 
-(defun identica-set-mode-string (loading)
+(defun identica-set-mode-string (loading identica-method server)
+  "Change the `mode-name' so can display the current status of identica-mode.
+
+It is needed the IDENTICA-METHOD and the SERVER, both are strings.
+LOADING is a boolean that set the apropiate string that show to the user that identica-mode is working on something."
   (with-current-buffer (identica-buffer)
     (let ((timeline-url
 	   (concat (or identica-remote-server

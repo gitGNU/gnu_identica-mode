@@ -84,7 +84,7 @@
 	   ;;CRLF at (point-max)
 	   (let ((body (identica-get-response-body)))
 	     (if (not body)
-		 (identica-set-mode-string nil)
+		 (identica-set-mode-string nil identica-method (sn-account-server sn-current-account))
 	       (setq identica-new-dents-count
 		     (+ identica-new-dents-count
 			(count t (mapcar
@@ -99,7 +99,7 @@
 				  identica-timeline-data nil))
 	       (if active-p
 		   (identica-render-pending-dents)
-		 (identica-set-mode-string "pending"))))))))
+		 (identica-set-mode-string "pending" identica-method (sn-account-server sn-current-account)))))))))
 
 (defun identica-get-response-header (&optional buffer)
   "Exract HTTP response header from HTTP response.
@@ -538,7 +538,7 @@ A status format is an alist with a symbol-name and data."
       (setq buffer-read-only t)
       (debug-print (current-buffer))
       (goto-char (+ point (if identica-scroll-mode (- (point-max) end) 0)))
-      (identica-set-mode-string nil)
+      (identica-set-mode-string nil identica-method (sn-account-server sn-current-account))
       (setf (sn-account-last-timeline-retrieved sn-current-account) identica-method)
       (if transient-mark-mode (deactivate-mark)))))
 
@@ -696,3 +696,4 @@ A status format is an alist with a symbol-name and data."
 			     formatted-status)
 	formatted-status))))
 
+(provide 'identica-translator)

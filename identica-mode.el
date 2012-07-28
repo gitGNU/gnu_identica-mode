@@ -105,7 +105,10 @@
 (require 'longlines)
 (require 'json)
 (require 'image)
+(require 'identica-commands)
 (require 'identica-http)
+(require 'identica-translator)
+(require 'identica-major-mdoe)
 
 (defconst identica-mode-version "1.2.1")
 
@@ -180,14 +183,6 @@ If non-nil, dents over this amount will bre removed.")
 (defcustom identica-update-status-edit-confirm-cancellation nil
   "If t, ask user if they are sure when aborting editing of an
 identica status update when using an edit-buffer"
-  :type 'boolean
-  :group 'identica-mode)
-
-(defcustom identica-soft-wrap-status t
-  "If non-nil, don't fill status messages in the timeline as
-paragraphs. Instead, use visual-line-mode or longlines-mode if
-  available to wrap messages.  This may work better for narrow
-  timeline windows."
   :type 'boolean
   :group 'identica-mode)
 
