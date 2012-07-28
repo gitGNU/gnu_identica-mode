@@ -212,14 +212,6 @@ The available choices are:
   :type 'string
   :group 'identica-mode)
 
-(defvar identica-buffer "*identica*")
-(defun identica-buffer (&optional method)
-  "Create a buffer for use by identica-mode.
-Initialize the global method with the default, or with METHOD, if present."
-  (unless method
-    (setq method "friends_timeline"))
-  (get-buffer-create identica-buffer))
-
 (defvar identica-timeline-data nil)
 (defvar identica-timeline-last-update nil)
 (defvar identica-highlighted-entries nil

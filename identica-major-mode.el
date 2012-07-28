@@ -406,22 +406,32 @@ static char * statusnet_off_xpm[] = {
 				      (concat "@" username " ") id)))))))
 
 
-(defun identica-set-mode-string (loading identica-method server)
+(defun identica-set-mode-string (loading identica-method server &optional buffer)
   "Change the `mode-name' so can display the current status of identica-mode.
 
 It is needed the IDENTICA-METHOD and the SERVER, both are strings.
-LOADING is a boolean that set the apropiate string that show to the user that identica-mode is working on something."
-  (with-current-buffer (identica-buffer)
-    (let ((timeline-url
-	   (concat (or identica-remote-server
-		       server)
-		   "/" identica-method)))
-      (setq mode-name
-	    (if loading (concat
-			 (if (stringp loading) loading "loading")
-			 " " timeline-url "...")
-	      timeline-url))
-      (debug-print mode-name))))
+LOADING is a boolean that set the apropiate string that show to the user that identica-mode is working on something.
+If BUFFER is not present or nil, set the `mode-name' in the `identica-buffer'."
+  (let ((buff (or buffer (identica-buffer))))
+    (with-current-buffer buff
+      (let ((timeline-url
+	     (concat server "/" identica-method)))
+	(setq mode-name
+	      (if loading (concat
+			   (if (stringp loading) loading "loading")
+			   " " timeline-url "...")
+		timeline-url))
+	;;	(debug-print mode-name)
+	))))
+
+
+(defvar identica-buffer "*identica*")
+(defun identica-buffer (&optional method)
+  "Create a buffer for use by identica-mode.
+Initialize the global method with the default, or with METHOD, if present."
+  (unless method
+    (setq method "friends_timeline"))
+  (get-buffer-create identica-buffer))
 
 
 
