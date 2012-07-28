@@ -414,7 +414,7 @@ LOADING is a boolean that set the apropiate string that show to the user that id
   (with-current-buffer (identica-buffer)
     (let ((timeline-url
 	   (concat (or identica-remote-server
-		       (sn-account-server sn-current-account))
+		       server)
 		   "/" identica-method)))
       (setq mode-name
 	    (if loading (concat
