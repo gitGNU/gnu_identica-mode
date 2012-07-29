@@ -25,6 +25,8 @@
 ;;
 ;; ____________________
 
+(require 'identica-misc)
+
 (defvar identica-timeline-data nil)
 
 (defvar identica-new-dents-count 0
@@ -440,19 +442,19 @@ Observe that this was copied by the last part of this function."
       (setq user-profile-url (assq-get 'statusnet:profile_url user-data))
 
       ;; make username clickable
-      (identica-add-username-properties user-name)
+      ;; (identica-add-username-properties user-name)
 
-      ;; make screen-name clickable
-      (identica-add-screen-name-properties user-screen-name)
+      ;; ;; make screen-name clickable
+      ;; (identica-add-screen-name-properties user-screen-name)
       
-      ;; make URI clickable
-      (setq text (identica-find-and-add-all-properties text))
+      ;; ;; make URI clickable
+      ;; (setq text (identica-find-and-add-all-properties text))
 
-      ;; make source pretty and clickable
-      (setq source (identica-make-source-pretty source))
+      ;; ;; make source pretty and clickable
+      ;; (setq source (identica-make-source-pretty source))
 
-      ;; save last update time
-      (setq identica-timeline-last-update created-at)
+      ;; ;; save last update time
+      ;; (setq identica-timeline-last-update created-at)
 
       (mapcar
        (lambda (sym)
@@ -738,5 +740,23 @@ A status format is an alist with a symbol-name and data."
                                          conversation-id, (attr 'conversation-id))
 			     formatted-status)
 	formatted-status))))
+
+
+(defun identica-cache-status-datum (status-datum &optional data-var)
+  "Cache status datum into data-var(default `identica-timeline-data')
+If STATUS-DATUM is already in DATA-VAR, return nil.  If not, return t."
+  (when (null data-var)
+    (setf data-var 'identica-timeline-data))
+  (let ((id (cdr (assq 'id status-datum))))
+    (if (or (null (symbol-value data-var))
+	    (not (find-if
+		  (lambda (item)
+		    (eql id (cdr (assq 'id item))))
+		  (symbol-value data-var))))
+	(progn
+	  (set data-var (sort (cons status-datum (symbol-value data-var))
+			      'identica-compare-statuses))
+	  t)
+      nil)))
 
 (provide 'identica-translator)

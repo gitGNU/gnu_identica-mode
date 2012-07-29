@@ -32,4 +32,10 @@
       (and (equal tag (car array))
 	   (cadr array))))
 
+
+(defun identica-compare-statuses (a b)
+  "Compare a pair of statuses.
+For use as a predicate for sort."
+  (< (assoc-default 'id b) (assoc-default 'id a)))
+
 (provide 'identica-misc)

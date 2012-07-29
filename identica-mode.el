@@ -332,28 +332,6 @@ we are interested in."
   (unless (get-buffer-process (current-buffer))
     (kill-buffer (current-buffer))))
 
-(defun identica-compare-statuses (a b)
-  "Compare a pair of statuses.
-For use as a predicate for sort."
-  (< (assoc-default 'id b) (assoc-default 'id a)))
-
-(defun identica-cache-status-datum (status-datum &optional data-var)
-  "Cache status datum into data-var(default `identica-timeline-data')
-If STATUS-DATUM is already in DATA-VAR, return nil.  If not, return t."
-  (when (null data-var)
-    (setf data-var 'identica-timeline-data))
-  (let ((id (cdr (assq 'id status-datum))))
-    (if (or (null (symbol-value data-var))
-	    (not (find-if
-		  (lambda (item)
-		    (eql id (cdr (assq 'id item))))
-		  (symbol-value data-var))))
-	(progn
-	  (set data-var (sort (cons status-datum (symbol-value data-var))
-			      'identica-compare-statuses))
-	  t)
-      nil)))
-
 (defun identica-url-reserved-p (ch)
   (or (and (<= ?A ch) (<= ch ?z))
       (and (<= ?0 ch) (<= ch ?9))
