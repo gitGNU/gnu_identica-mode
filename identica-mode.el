@@ -108,7 +108,7 @@
 (require 'identica-commands)
 (require 'identica-http)
 (require 'identica-translator)
-(require 'identica-major-mdoe)
+(require 'identica-major-mode)
 
 (defconst identica-mode-version "1.2.1")
 
@@ -123,20 +123,6 @@
   :group 'applications )
 
 (defvar identica-timer nil "Timer object for timeline refreshing will be stored here.  DO NOT SET VALUE MANUALLY.")
-
-(defvar identica-new-dents-count 0
-  "Number of new tweets when `identica-new-dents-hook' is run.")
-
-(defvar identica-new-dents-hook nil
-  "Hook run when new twits are received.
-
-You can read `identica-new-dents-count' to get the number of new
-tweets received when this hook is run.")
-
-(defvar identica-display-max-dents nil
-  "How many dents to keep on the displayed timeline.
-
-If non-nil, dents over this amount will bre removed.")
 
 (defcustom identica-idle-time 20
   "Idle time."
@@ -212,7 +198,6 @@ The available choices are:
   :type 'string
   :group 'identica-mode)
 
-(defvar identica-timeline-data nil)
 (defvar identica-timeline-last-update nil)
 (defvar identica-highlighted-entries nil
   "List of entry ids selected for highlighting.")

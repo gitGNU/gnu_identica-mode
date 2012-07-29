@@ -25,6 +25,24 @@
 ;;
 ;; ____________________
 
+(defvar identica-timeline-data nil)
+
+(defvar identica-new-dents-count 0
+  "Number of new tweets when `identica-new-dents-hook' is run.")
+
+(defvar identica-new-dents-hook nil
+  "Hook run when new twits are received.
+
+You can read `identica-new-dents-count' to get the number of new
+tweets received when this hook is run.")
+
+(defvar identica-display-max-dents nil
+  "How many dents to keep on the displayed timeline.
+
+If non-nil, dents over this amount will bre removed.")
+
+
+
 (defcustom identica-blacklist '()
   "List of regexes used to filter statuses, evaluated after status formatting is applied."
   :type 'string
@@ -53,7 +71,9 @@
 ;; %f - source
 ;; %# - id
 
-(defun identica-http-get-default-sentinel
+;; HTTP sentinel should be part of identica-http, 
+;; the problem here is that there is high coupling(things from idenica-http and lots of things from here...)
+(defun identica-http-get-default-sentinel-original
   (&optional status method-class method parameters success-message)
   (debug-print (window-buffer))
   (let ((error-object (assoc-workaround :error status))
@@ -92,14 +112,37 @@
 				  (reverse (identica-xmltree-to-status
 					    body))))))
 					; Shorten the timeline if necessary
-	       (if (and identica-display-max-dents
-			(> (safe-length identica-timeline-data)
-			   identica-display-max-dents))
-		   (cl-set-nthcdr identica-display-max-dents
-				  identica-timeline-data nil))
+	       (identica-shorten-timeline)
 	       (if active-p
 		   (identica-render-pending-dents)
 		 (identica-set-mode-string "pending" identica-method (sn-account-server sn-current-account)))))))))
+
+
+(defun identica-process-http-buffer ()
+  "Process de HTTP contents of the `current-buffer' and add everything to the cache "
+  (let ((body (identica-get-response-body)))
+    (unless (not body)
+      (setq identica-new-dents-count
+	    (+ identica-new-dents-count
+	       (count t (mapcar
+			 #'identica-cache-status-datum
+			 (reverse (identica-xmltree-to-status
+				   body))))))
+      (identica-shorten-timeline))))
+
+(defun identica-shorten-timeline (&optional timeline-data)
+  "Shorten the timeline if necessary. 
+
+If timeline has to many dents, shorten it. 
+TIMELINE-DATA is used, it has the same format as `identica-cache-status-datum' return.
+If not present or nil, use `identica-timeline-data'."
+  (setq timeline-data (or timeline-data identica-timeline-data))
+  (if (and identica-display-max-dents
+	   (> (safe-length timeline-data)
+	      identica-display-max-dents))
+      (cl-set-nthcdr identica-display-max-dents
+		     timeline-data nil))
+  )
 
 (defun identica-get-response-header (&optional buffer)
   "Exract HTTP response header from HTTP response.
