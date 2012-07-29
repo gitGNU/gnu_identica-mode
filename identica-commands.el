@@ -39,6 +39,11 @@
 ;; ____________________
 ;;
 
+(require 'identica-major-mode)
+(require 'identica-translator)
+(require 'identica-http)
+(require 'identica-mode)
+
 (defun identica-enable-oauth ()  
   "Enables oauth for identica-mode."
   (interactive)
@@ -496,10 +501,10 @@ un-highlight all other entries."
 (defun identica ()
   "Start identica-mode."
   (interactive)
-  ;; Initialize everything
-  (identica-autoload-oauth)
+  ;; Initialize everything  
   (switch-to-buffer (identica-buffer))
   (kill-all-local-variables)
+
   (identica-mode-init-variables)
   (identica-retrieve-configuration) 
   ;; Start the major mode!

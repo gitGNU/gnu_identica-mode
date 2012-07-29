@@ -563,6 +563,8 @@ You have to use this functions first if you want to use any identica-http's func
 	       :last-timeline-retrieved nil)
 	      statusnet-accounts))
   (setq sn-current-account (car statusnet-accounts))
+
+  (identica-autoload-oauth)
   )
 
 ;;
