@@ -158,7 +158,22 @@ must be worked around when using oauth.")
 
 
 
-;;; Proxy
+(defun identica-get-status-url (id)
+  "Generate status URL."
+  (format "https://%s/notice/%s" (sn-account-server sn-current-account) id))
+
+(defun identica-get-context-url (id)
+  "Generate status URL."
+  (format "https://%s/conversation/%s" (sn-account-server sn-current-account) id))
+
+(defun identica-get-config-url ()
+  "Generate configuration URL."
+  (format "http://%s/api/statusnet/config.xml" (sn-account-server sn-current-account)))
+
+
+
+					;____________________
+					; Proxy
 (defvar identica-proxy-use nil)
 (defvar identica-proxy-server nil)
 (defvar identica-proxy-port 8080)
@@ -225,6 +240,9 @@ alist `url-http-proxy-basic-auth-storage' and sets `url-using-proxy'."
 		  (cons (cons file
 			      (base64-encode-string auth))
 			(cdr-safe proxy-double-alist))))))))
+
+					; ____________________
+					; authentication
 
 (defun identica-set-auth (&optional url username passwd server port)
   "Sets the authentication parameters as required by url library.
@@ -376,6 +394,9 @@ A simbol translation is done for the PARAMETERS using `identica-percent-encode'.
 		     parameters
 		     "&")))))
 
+					; ____________________
+					; Error Checking 
+
 (defvar identica-http-error-data nil
   "If there is an error in HTTP, this variable is non-nil and it has the information
 and explanation of the error.")
@@ -400,10 +421,19 @@ The variable `identica-http-error-data' is stored if errors found, if not is set
     identica-http-error-data));; No error found.
       
 
+					; ____________________
+					; Getting data
 
 (defvar identica-http-get-sentinel nil
   "This is used for `identica-http-get-nothing-sentinel'. If this variable has a function, it will be called after
-the sentinel finish checking all the HTTP errors and no errors found.")
+the sentinel finish checking all the HTTP errors and no errors found.
+
+The function here, will need to recieve the following arguments:
+method-class method parameters arg1 arg2 ...
+
+Where (arg1, arg2, ...) is the list with arguments passed to the `identica-http-get' function in SENTINEL-ARGUMENTS parameter.
+
+Method-class, method and parameters is the information used for connecting to the server.")
 
 (defun identica-http-get-nothing-sentinel (status &rest parameters)
   "This sentinel checks for HTTP errors and then calls the function stored at `identica-http-post-sentinel'
@@ -411,7 +441,7 @@ if no erros found."
   (if (identica-http-check-errors status)      
       (message identica-http-error-data)
     (when identica-http-get-sentinel
-      (funcall identica-http-get-sentinel parameters)
+      (apply identica-http-get-sentinel parameters)
       )
     )
   )
@@ -461,7 +491,21 @@ The variable `sn-current-account' gives the following important information:
 (defun identica-url-retrieve
   (url sentinel method-class method parameters sentinel-arguments &optional unhex-workaround)
   "Call url-retrieve or oauth-url-retrieve dsepending on the mode.
-Apply url-unhex-string workaround if necessary."
+Apply url-unhex-string workaround if necessary.
+
+The SENTINEL will recieve the following argument:
+A list with the METHOD-CLASS METHOD PARAMETERS and SENTINEL-ARGUMENTS, everything appended.
+
+For example: 
+if you call:
+  (`identica-url-retrieve' \"identi.ca\" my-sentinel \"statuses\" \"friends_timeline\" '(\"login\" \"t\") '(param1 param2))
+
+The sentinel will need the following definition:
+  (defun my-sentinel (status method-class method parameters arg1 arg2) ... )
+
+
+SENTINEL-ARGUMENTS is a list of elements, but the sentinel will recieve a list like described above with no sublist as elements(everything will be apened forming one list).
+"
   (if (and (equal (sn-account-auth-mode sn-current-account) "oauth")
 	   (sn-oauth-access-token (sn-account-oauth-data sn-current-account)))
       (if unhex-workaround
@@ -482,6 +526,9 @@ bug in url-unhex-string present in emacsen previous to 23.3."
 		  (append (list method-class method parameters)
 			  sentinel-arguments))))
 
+					; ____________________
+					; Posting data
+
 (defvar identica-http-post-sentinel nil
     "This is used for `identica-http-post-nothing-sentinel'. If this variable has a function, it will be called after
 the sentinel finish checking all the HTTP errors and no errors found.")
@@ -492,7 +539,7 @@ if no erros found."
   (if (identica-http-check-errors status)
       (message identica-http-error-data)
     (when identica-http-post-sentinel
-      (funcall identica-http-post-sentinel parameters)
+      (apply identica-http-post-sentinel parameters)
       )
     )
   ;; This is not necessary because it has to be in the function stored in `identica-http-post-sentinel'.
@@ -534,18 +581,6 @@ PARAMETERS is alist of URI parameters. ex) ((\"mode\" . \"view\") (\"page\" . \"
       (kill-buffer identica-http-buffer))
     (identica-url-retrieve url sentinel method-class method parameters
 			   sentinel-arguments identica-unhex-broken)))
-
-(defun identica-get-status-url (id)
-  "Generate status URL."
-  (format "https://%s/notice/%s" (sn-account-server sn-current-account) id))
-
-(defun identica-get-context-url (id)
-  "Generate status URL."
-  (format "https://%s/conversation/%s" (sn-account-server sn-current-account) id))
-
-(defun identica-get-config-url ()
-  "Generate configuration URL."
-  (format "http://%s/api/statusnet/config.xml" (sn-account-server sn-current-account)))
 
 
 					; ____________________
