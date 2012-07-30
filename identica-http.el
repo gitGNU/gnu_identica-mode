@@ -459,6 +459,9 @@ the above METHOD.  It is specified as an alist with parameter name and its corre
 SENTINEL represents the callback function to be called after the http response is completely retrieved.
 If SENTINEL is nil, the following sentinel is used:`identica-http-get-nothing-sentinel'.
 
+SENTINEL must have the following parameters(see `identica-url-retrieve' for more information about callbacks function):
+  status METHOD-CLASS METHOD PARAMETERS and SENTINEL-ARGUMENTS
+
 SENTINEL-ARGUMENTS is the list of arguments (if any) of the SENTINEL
 procedure.
 
@@ -494,7 +497,7 @@ The variable `sn-current-account' gives the following important information:
 Apply url-unhex-string workaround if necessary.
 
 The SENTINEL will recieve the following argument:
-A list with the METHOD-CLASS METHOD PARAMETERS and SENTINEL-ARGUMENTS, everything appended.
+A list with the status METHOD-CLASS METHOD PARAMETERS and SENTINEL-ARGUMENTS, everything appended.
 
 For example: 
 if you call:
