@@ -42,7 +42,7 @@
 
 (require 'url)
 (require 'url-http)
-(require 'identica-misc)
+(require 'identica-common-things)
 
 (defvar identica-http-buffer nil
   "Pointer to the current http response buffer.")

@@ -109,8 +109,9 @@
 (require 'identica-http)
 (require 'identica-translator)
 (require 'identica-major-mode)
+(require 'identica-common-things)
 
-(defconst identica-mode-version "1.2.1")
+
 
 ;;url-basepath fix for emacs22
 (unless (fboundp 'url-basepath)

@@ -1,5 +1,5 @@
 
-    ;; identica-misc.el
+    ;; identica-common-things.el
     ;; Copyright (C) 2012  Giménez, Christian N.
 
     ;; This program is free software: you can redistribute it and/or modify
@@ -23,8 +23,11 @@
 ;;
 ;; Miscelaneous functions that doesn't fit anywhere! :P
 ;;
+;; Common functions and variables that may be needed by any other module.
 ;; ____________________
 ;;
+
+(defconst identica-mode-version "1.2.1")
 
 (defun assoc-workaround (tag array)
   "Workaround odd semi-associative array returned by url-http."
@@ -38,4 +41,4 @@
 For use as a predicate for sort."
   (< (assoc-default 'id b) (assoc-default 'id a)))
 
-(provide 'identica-misc)
+(provide 'identica-common-things)
