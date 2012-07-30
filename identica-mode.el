@@ -134,17 +134,6 @@
   :type 'integer
   :group 'identica-mode)
 
-(defcustom identica-username nil
-  "Your identi.ca username.  If nil, you will be prompted."
-  :type '(choice (const :tag "Ask" nil) (string))
-  :group 'identica-mode)
-
-(defcustom identica-password nil
-  "Your identi.ca password.  If nil, you will be prompted."
-  :type '(choice (const :tag "Ask" nil) (string))
-  :group 'identica-mode)
-
-
 (defcustom identica-default-timeline "friends_timeline"
   "Default timeline to retrieve."
   :type 'string

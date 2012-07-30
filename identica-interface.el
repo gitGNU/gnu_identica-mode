@@ -26,7 +26,12 @@
 ;; ____________________
 ;;
 
+(require 'identica-translator)
 
+;; This the original render-timeline function, I'll keep it for reference.
+;;
+;; TODO: Erase `identica-render-timeline-orig' function when the new ones does the same!
+;;
 (defun identica-render-timeline-orig ()
   (with-current-buffer (identica-buffer)
     (let ((point (point))

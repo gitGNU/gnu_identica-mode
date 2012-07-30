@@ -47,9 +47,37 @@
 (defvar identica-http-buffer nil
   "Pointer to the current http response buffer.")
 
+(defvar identica-http-initialized nil
+  "If identica-http variables has initialized. 
+You can initialize variables using `identica-http-init-variables'.
+
+Any function can use this variables to see if identica-http has all information available, and if not, call
+themself the function `identica-http-init-variables'.")
+
+;; Connection data.
+(defcustom identica-username nil
+  "Your identi.ca username.  If nil, you will be prompted."
+  :type '(choice (const :tag "Ask" nil) (string))
+  :group 'identica-mode)
+
+(defcustom identica-password nil
+  "Your identi.ca password.  If nil, you will be prompted."
+  :type '(choice (const :tag "Ask" nil) (string))
+  :group 'identica-mode)
+
 (defcustom identica-auth-mode "password"
   "Authorization mode used, options are password and oauth."
   :type 'string
+  :group 'identica-mode)
+
+(defcustom statusnet-server "identi.ca"
+  "Statusnet instance url."
+  :type 'string
+  :group 'identica-mode)
+
+(defcustom statusnet-port 80
+  "Port on which StatusNet instance listens."
+  :type 'integer
   :group 'identica-mode)
 
 (defcustom identica-http-get-timeout 10
@@ -57,19 +85,8 @@
   :type 'integer
   :group 'identica-mode)
 
-
-(defcustom statusnet-server "identi.ca"
-  "Statusnet instance url."
-  :type 'string
-  :group 'identica-mode)
-
 (defcustom statusnet-server-textlimit 140
   "Number of characters allowed in a status."
-  :type 'integer
-  :group 'identica-mode)
-
-(defcustom statusnet-port 80
-  "Port on which StatusNet instance listens."
   :type 'integer
   :group 'identica-mode)
 
@@ -91,6 +108,53 @@
 
 (defvar statusnet-accounts nil
   "A list of login credentials for statusnet instances.")
+
+
+;; Variables and structures for OAUTH 
+
+;;workaround for url-unhex-string bug that was fixed in emacs 23.3
+(defvar identica-unhex-broken nil
+  "Predicate indicating broken-ness of `url-unhex-string'.
+
+If non-nil, indicates that `url-unhex-string' is broken and
+must be worked around when using oauth.")
+
+(defvar identica-mode-oauth-consumer-key
+  "53e8e7bf7d1be8e58ef1024b31478d2b")
+
+(defvar identica-mode-oauth-consumer-secret
+  "1ab0876f14bd82c4eb450f720a0e84ae")
+
+(defcustom statusnet-request-url
+  "https://identi.ca/api/oauth/request_token"
+  "Statusnet oauth request_token url."
+  :type 'string
+  :group 'identica-mode)
+
+(defcustom statusnet-access-url
+  "https://identi.ca/api/oauth/access_token"
+  "Statusnet oauth access_token url."
+  :type 'string
+  :group 'identica-mode)
+
+(defcustom statusnet-authorize-url
+  "https://identi.ca/api/oauth/authorize"
+  "Statusnet authorization url."
+  :type 'string
+  :group 'identica-mode)
+
+(defvar oauth-access-token nil)
+
+(defstruct (statusnet-oauth-data
+	    (:conc-name sn-oauth-))
+  "The oauth configuration associated with a statusnet account."
+  consumer-key ; string
+  consumer-secret ; string
+  request-url ; string
+  access-url ; string
+  authorize-url ; string
+  access-token ; string
+)
 
 
 
@@ -374,12 +438,11 @@ The variable `sn-current-account' gives the following important information:
 * Username and password if necessary
 * If oauth is used for authentication(instead of username and pass.)
 "
+  (identica-http-init-variables)
   (or sentinel (setq sentinel 'identica-http-get-nothing-sentinel))
   (let* ((server (sn-account-server sn-current-account))
 	 (auth-mode (sn-account-auth-mode sn-current-account))
 	 (url (identica-make-url server method-class method parameters))
-	 (url-package-name "emacs-identica-mode")
-	 (url-package-version identica-mode-version)
 	 (url-show-status nil))
     (identica-set-proxy)
     (unless (equal auth-mode "none")
@@ -442,6 +505,7 @@ if no erros found."
 METHOD-CLASS must be one of Identica API method classes(statuses, users or direct_messages).
 METHOD must be one of Identica API method which belongs to METHOD-CLASS.
 PARAMETERS is alist of URI parameters. ex) ((\"mode\" . \"view\") (\"page\" . \"6\")) => <URI>?mode=view&page=6"
+  (identica-http-init-variables)
   (or sentinel (setq sentinel 'identica-http-post-default-sentinel))
   (let ((url-request-method "POST")
 	(url (concat "http://"(sn-account-server sn-current-account) "/api/" method-class "/" method ".xml"
@@ -483,50 +547,9 @@ PARAMETERS is alist of URI parameters. ex) ((\"mode\" . \"view\") (\"page\" . \"
   "Generate configuration URL."
   (format "http://%s/api/statusnet/config.xml" (sn-account-server sn-current-account)))
 
-;;workaround for url-unhex-string bug that was fixed in emacs 23.3
-(defvar identica-unhex-broken nil
-  "Predicate indicating broken-ness of `url-unhex-string'.
 
-If non-nil, indicates that `url-unhex-string' is broken and
-must be worked around when using oauth.")
-
-(defvar identica-mode-oauth-consumer-key
-  "53e8e7bf7d1be8e58ef1024b31478d2b")
-
-(defvar identica-mode-oauth-consumer-secret
-  "1ab0876f14bd82c4eb450f720a0e84ae")
-
-(defcustom statusnet-request-url
-  "https://identi.ca/api/oauth/request_token"
-  "Statusnet oauth request_token url."
-  :type 'string
-  :group 'identica-mode)
-
-(defcustom statusnet-access-url
-  "https://identi.ca/api/oauth/access_token"
-  "Statusnet oauth access_token url."
-  :type 'string
-  :group 'identica-mode)
-
-(defcustom statusnet-authorize-url
-  "https://identi.ca/api/oauth/authorize"
-  "Statusnet authorization url."
-  :type 'string
-  :group 'identica-mode)
-
-(defvar oauth-access-token nil)
-
-(defstruct (statusnet-oauth-data
-	    (:conc-name sn-oauth-))
-  "The oauth configuration associated with a statusnet account."
-  consumer-key ; string
-  consumer-secret ; string
-  request-url ; string
-  access-url ; string
-  authorize-url ; string
-  access-token ; string
-)
-
+					; ____________________
+					; Initialization
 (defun identica-autoload-oauth ()
   "Autoloads oauth.el when needed."
   (autoload 'oauth-authorize-app "oauth")
@@ -535,36 +558,41 @@ must be worked around when using oauth.")
 
 
 (defun identica-http-init-variables()
-  "Init any variable necessary to make identica-http works fine and happy.
+  "Init any variable necessary to make identica-http works fine and happy. If `identica-http-initialized' is t then, do nothing!.
 
 You have to use this functions first if you want to use any identica-http's function.
 
  (Why I don't call this function at loading time? That's a good question...) 
-"
-  ;; Create an account object based on the various custom variables.
-  ;; Insert it into the statusnet accounts list.
-  (setq statusnet-accounts
-	(cons (make-statusnet-account
-	       :server statusnet-server
-	       :port statusnet-port
-	       :username identica-username
-	       :auth-mode identica-auth-mode
-	       :password identica-password
-	       :textlimit statusnet-server-textlimit
-	       :oauth-data (if (string= identica-auth-mode "oauth")
-			       (make-statusnet-oauth-data
-				:consumer-key identica-mode-oauth-consumer-key
-				:consumer-secret identica-mode-oauth-consumer-secret
-				:request-url statusnet-request-url
-				:access-url statusnet-access-url
-				:authorize-url statusnet-authorize-url
-				:access-token nil)
-			     nil)
-	       :last-timeline-retrieved nil)
-	      statusnet-accounts))
-  (setq sn-current-account (car statusnet-accounts))
 
-  (identica-autoload-oauth)
+`identica-http-initialized' is setted to t when this function finish so we don't initialize twice!
+"
+  (unless identica-http-initialized
+    ;; Create an account object based on the various custom variables.
+    ;; Insert it into the statusnet accounts list.
+    (setq statusnet-accounts
+	  (cons (make-statusnet-account
+		 :server statusnet-server
+		 :port statusnet-port
+		 :username identica-username
+		 :auth-mode identica-auth-mode
+		 :password identica-password
+		 :textlimit statusnet-server-textlimit
+		 :oauth-data (if (string= identica-auth-mode "oauth")
+				 (make-statusnet-oauth-data
+				  :consumer-key identica-mode-oauth-consumer-key
+				  :consumer-secret identica-mode-oauth-consumer-secret
+				  :request-url statusnet-request-url
+				  :access-url statusnet-access-url
+				  :authorize-url statusnet-authorize-url
+				  :access-token nil)
+			       nil)
+		 :last-timeline-retrieved nil)
+		statusnet-accounts))
+    (setq sn-current-account (car statusnet-accounts))
+    
+    (identica-autoload-oauth)
+    (setq identica-http-initialized t)
+    )
   )
 
 ;;
