@@ -213,18 +213,18 @@ STATUS must be a status data, one element taken from the result of `identica-tim
 
     (case token
       ((?s)                         ; %s - screen_name
-       (attr 'user-screen-name))
+       (identica-format-user-name (attr 'user-screen-name)))
       ((?S)                         ; %S - name
-       (attr 'user-name))
+       (identica-format-user-name (attr 'user-name)))
       ((?i)                         ; %i - profile_image
        ;;(identica-profile-image (attr 'user-profile-image-url)) ;; TODO:
        )
       ((?d)                         ; %d - description
-       (attr 'user-description))
+       (identica-format-user-description (attr 'user-description)))
       ((?l)                         ; %l - location
-       (attr 'user-location))
+       (identica-format-location-1 (attr 'user-location)))
       ((?L)                         ; %L - " [location]"
-       (identica-format-location (attr 'user-location)))
+       (identica-format-location-2 (attr 'user-location)))
       ((?u)                         ; %u - url
        (attr 'user-url))
       ((?U)                         ; %U - profile url
@@ -247,7 +247,7 @@ STATUS must be a status data, one element taken from the result of `identica-tim
       ((?')                         ; %' - truncated
        (identica-format-truncated (attr 'truncated)))
       ((?f)                         ; %f - source
-       (attr 'source))
+       (identica-format-source (attr 'source)))
       ((?F)                         ; %F - ostatus-aware source
        (identica-ostatus-aware (attr 'source) (attr 'user-profile-url)))
       ((?#)                         ; %# - id
@@ -259,36 +259,66 @@ STATUS must be a status data, one element taken from the result of `identica-tim
       (t
        (char-to-string token)))))
 
-(defun identica-format-location (location)
+;;
+;; All this formated source will not have face format, that will be the job for `identica-mode' major mode(see identica-major-mode.el file).
+;; Here will be only properties that doesn't affect the face and will tell usefull information(like what kind of thing is the text).
+;; 
+;; Take as an example the created-at date: it has the property "'created-at t". This is usefull to know where each dent part starts and ends.
+
+(defun identica-format-user-name (name)
+  "How the user-name will be formated?"
+  (propertize name 'user-name t)
+  )
+
+(defun identica-format-source (source)
+  "How source will be formated?"
+  (setq source (identica-make-source-pretty source))
+  (add-text-properties 0 (length source)
+		       '('source t)
+		       source)
+  source)
+
+(defun identica-format-location-1 (location)
+  "How location will formated?"
   (unless (or (null location) (string= "" location))
-    (concat " [" location "]")))
+    (propertize (concat " [" location "]")
+		'location t)))
+
+(defun identica-format-location-2 (location)
+  "How location will formated?"
+  (propertize location 'location t))
 
 (defun identica-format-user-profile-url (url)
-  (cadr (split-string url "https*://")))
+  "How user-profile-url will formated?"
+  (propertize (cadr (split-string url "https*://")) 
+	      '('user-profile-url t)))
 
 (defun identica-format-in-reply (reply-id reply-name)
+  "How \"in-reply...\" will formated?"
   (unless (or (null reply-id) (string= "" reply-id)
 	      (null reply-name) (string= "" reply-name))
     (let ((in-reply-to-string (format "in reply to %s" reply-name))
 	  ;; (url (identica-get-status-url reply-id)) ;; TODO:
 	  )
       (add-text-properties 0 (length in-reply-to-string)
-			   `(mouse-face highlight
-					;; uri ,url ;; TODO:
-					)
+			   `(mouse-face highlight 'in-reply t)
 			   in-reply-to-string)
       (concat " " in-reply-to-string))))
 
 (defun identica-format-user-protected (protected)
+  "How user protected sign will formated?"
   (when (string= "true" protected)
-    "[x]"))
+    (propertize "[x]" 'user-protected t)))
 
 (defun identica-format-created-at (created-at)
-  (identica-local-strftime
-   (or (match-string-no-properties 2 format-str) "%H:%M:%S")
-   created-at))
+  "How created at date-time will formated?"
+  (propertize (identica-local-strftime
+	       (or (match-string-no-properties 2 format-str) "%H:%M:%S")
+	       created-at)
+	      'created-at t))
 
 (defun identica-format-seconds-ago (status-created-at)
+  "How \"some seconds ago\" message will formated?"
   (let ((created-at (apply 'encode-time (parse-time-string status-created-at)))
 	(now (current-time)))
     (let ((secs (+ (* (- (car now) (car created-at)) 65536)
@@ -309,27 +339,32 @@ STATUS must be a status data, one element taken from the result of `identica-tim
 		  (t (format-time-string "%I:%M %p %B %d, %Y" created-at))))
       ;; (setq url (identica-get-status-url (attr 'id))) ;; TODO:
       ;; make status url clickable
-      (add-text-properties
-       0 (length time-string)
-       `(mouse-face highlight
-		    ;; uri ,url ;; TODO:
-		    )
-       time-string)
+      (add-text-properties  0 (length time-string)
+			    `(mouse-face highlight 'seconds-ago t)
+			    time-string)
       time-string)))
 
 
 (defun identica-format-truncated (truncated)
+  "How truncated sign will formated?"
   (when (string= "true" truncated)
-    "..."))
+    (propertize "..." 'truncated t)))
 
 (defun identica-ostatus-aware (source user-profile-url)
+  "How ostatus aware will formated?"
   (if (string= source "ostatus")
-      (cadr (split-string user-profile-url "https*://"))
-    source))
+      (propertize (cadr (split-string user-profile-url "https*://"))
+		  'ostatus-aware t)
+    (propertize source
+		'ostatus aware t)))
 
 (defun identica-format-favored (likes)			 
+  "How favored sign will formated?"
   (when (string= "true" likes)
-    (propertize "❤" 'favored t)))
+    (propertize "❤" 
+		'favored t)))
+
+;;--------------------
 
 (defun identica-find-and-add-screen-name-properties (text)
   "Finds all texts with URI format and add link properties to them."  
