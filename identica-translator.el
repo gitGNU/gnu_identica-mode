@@ -25,7 +25,7 @@
 ;;
 ;; ____________________
 
-(require 'identica-misc)
+(require 'identica-common-things)
 
 (defvar identica-timeline-data nil)
 
@@ -44,34 +44,6 @@ tweets received when this hook is run.")
 If non-nil, dents over this amount will bre removed.")
 
 
-
-(defcustom identica-blacklist '()
-  "List of regexes used to filter statuses, evaluated after status formatting is applied."
-  :type 'string
-  :group 'identica-mode)
-
-(defcustom identica-status-format "%i %s,  %@:\n  %t // from %f%L%r\n\n"
-  "The format used to display the status updates."
-  :type 'string
-  :group 'identica-mode)
-;; %s - screen_name
-;; %S - name
-;; %i - profile_image
-;; %d - description
-;; %l - location
-;; %L - " [location]"
-;; %r - in reply to status
-;; %u - url
-;; %j - user.id
-;; %p - protected?
-;; %c - created_at (raw UTC string)
-;; %C{time-format-str} - created_at (formatted with time-format-str)
-;; %@ - X seconds ago
-;; %t - text
-;; %' - truncated
-;; %h - favorited
-;; %f - source
-;; %# - id
 
 ;; HTTP sentinel should be part of identica-http, 
 ;; the problem here is that there is high coupling(things from idenica-http and lots of things from here...)
@@ -194,43 +166,6 @@ Known Statusnet issue.  Mostly harmless except if in tags."
   (goto-char (point-min))
   (while (re-search-forward "\r?\n[0-9a-z]+\r?\n" nil t)
     (replace-match "")))
-
-;;
-;; TODO: It is not appropriate this functions here, they should be in the major mode file.
-;;
-(defun identica-add-screen-name-properties (user-screen-name)
-  "Return the string USER-SCREEN-NAME with faces and properties for displaying a screen name."
-  (add-text-properties
-   0 (length user-screen-name)
-   `(mouse-face highlight
-		face identica-username-face
-		uri ,user-profile-url
-		face identica-username-face)
-   user-screen-name))
-
-(defun identica-add-username-properties (user-name)
-  "Return the string USER-NAME with faces and properties for displaying a username."
-  (add-text-properties
-       0 (length user-name)
-       `(mouse-face highlight
-		    uri ,user-profile-url
-		    face identica-username-face)
-       user-name))
-
-(defconst identica-screen-name-regexp "@\\([_[:word:]0-9]+\\)"
-  "Regexp for user-names.")
-
-(defconst identica-group-name-regexp "!\\([_[:word:]0-9\-]+\\)"
-  "Regexp for group-names.")
-  
-(defconst identica-tag-name-regexp "#\\([_[:word:]0-9\-]+\\)"
-  "Regexp for tag-names.")
-
-(defconst identica-ur1-regexp "ur1\.ca/[a-z0-9]+/?"
-  "ur1 shortener regexp.")
-
-(defconst identica-http-url-regexp "https?://[-_.!~*'()[:word:]0-9\;/?:@&=+$,%#]+"
-  "Regexp for http URLs.")
 
 (defun identica-status-to-status-datum (status)  
   "Transform a status(dent) in xml parsed tree into a data structure understandable by identica-mode.
@@ -389,16 +324,6 @@ A status format is an alist with a symbol-name and data."
 	(when (> (string-to-number textlimit-value) 0)
 	  (setf (sn-account-textlimit sn-current-account) (string-to-number textlimit-value))))))
   (identica-start))
-
-(defun identica-status-is-in-blacklist (formated-status)
-  "Checks if the FORMATED-STATUS is in the blacklist by checking each regex in the `identica-blacklist'."
-  (let ((blacklisted nil))
-    (mapc (lambda (regex)
-	    (when (string-match-p regex formatted-status)
-	      (setq blacklisted 't)))
-	  identica-blacklist)
-    blacklisted))
-
 
 (defun identica-cache-status-datum (status-datum &optional data-var)
   "Cache status datum into data-var(default `identica-timeline-data')

@@ -28,6 +28,36 @@
 
 (require 'identica-translator)
 
+(defcustom identica-blacklist '()
+  "List of regexes used to filter statuses, evaluated after status formatting is applied."
+  :type 'string
+  :group 'identica-mode)
+
+(defcustom identica-status-format "%i %s,  %@:\n  %t // from %f%L%r\n\n"
+  "The format used to display the status updates."
+  :type 'string
+  :group 'identica-mode)
+;; %s - screen_name
+;; %S - name
+;; %i - profile_image
+;; %d - description
+;; %l - location
+;; %L - " [location]"
+;; %r - in reply to status
+;; %u - url
+;; %j - user.id
+;; %p - protected?
+;; %c - created_at (raw UTC string)
+;; %C{time-format-str} - created_at (formatted with time-format-str)
+;; %@ - X seconds ago
+;; %t - text
+;; %' - truncated
+;; %h - favorited
+;; %f - source
+;; %# - id
+
+
+
 ;; This the original render-timeline function, I'll keep it for reference.
 ;;
 ;; TODO: Erase `identica-render-timeline-orig' function when the new ones does the same!
@@ -83,6 +113,15 @@
       (identica-set-mode-string nil identica-method (sn-account-server sn-current-account))
       (setf (sn-account-last-timeline-retrieved sn-current-account) identica-method)
       (if transient-mark-mode (deactivate-mark)))))
+
+(defun identica-status-is-in-blacklist (formated-status)
+  "Checks if the FORMATED-STATUS is in the blacklist by checking each regex in the `identica-blacklist'."
+  (let ((blacklisted nil))
+    (mapc (lambda (regex)
+	    (when (string-match-p regex formatted-status)
+	      (setq blacklisted 't)))
+	  identica-blacklist)
+    blacklisted))
 
 (defun identica-render-timeline ()
   "Render all the timeline getting all the information from `identica-timeline-data'."
@@ -395,5 +434,39 @@
        source)
       source)))
 
+
+(defun identica-add-screen-name-properties (user-screen-name)
+  "Return the string USER-SCREEN-NAME with faces and properties for displaying a screen name."
+  (add-text-properties
+   0 (length user-screen-name)
+   `(mouse-face highlight
+		face identica-username-face
+		uri ,user-profile-url
+		face identica-username-face)
+   user-screen-name))
+
+(defun identica-add-username-properties (user-name)
+  "Return the string USER-NAME with faces and properties for displaying a username."
+  (add-text-properties
+       0 (length user-name)
+       `(mouse-face highlight
+		    uri ,user-profile-url
+		    face identica-username-face)
+       user-name))
+
+(defconst identica-screen-name-regexp "@\\([_[:word:]0-9]+\\)"
+  "Regexp for user-names.")
+
+(defconst identica-group-name-regexp "!\\([_[:word:]0-9\-]+\\)"
+  "Regexp for group-names.")
+  
+(defconst identica-tag-name-regexp "#\\([_[:word:]0-9\-]+\\)"
+  "Regexp for tag-names.")
+
+(defconst identica-ur1-regexp "ur1\.ca/[a-z0-9]+/?"
+  "ur1 shortener regexp.")
+
+(defconst identica-http-url-regexp "https?://[-_.!~*'()[:word:]0-9\;/?:@&=+$,%#]+"
+  "Regexp for http URLs.")
 
 (provide 'identica-interface)
