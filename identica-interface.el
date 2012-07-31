@@ -135,7 +135,7 @@ A filter is applied as a blacklist of dents."
     (dolist (status identica-timeline-data)
       (let ((formated-status (identica-format-status status identica-status-format)))
 	(unless (identica-status-is-in-blacklist formated-status)
-	  (insert formated-status))))))
+	  (insert (identica-find-and-add-all-properties formated-status)))))))
   
 (defun identica-profile-image (profile-image-url)
   (when (string-match "/\\([^/?]+\\)\\(?:\\?\\|$\\)" profile-image-url)
@@ -320,9 +320,6 @@ STATUS must be a status data, one element taken from the result of `identica-tim
   (when (string= "true" likes)
     (propertize "❤" 'face 'identica-heart-face)))
 
-;;
-;; TODO: There's still repeated code! that has to be in a different function.
-;;
 (defun identica-find-and-add-screen-name-properties (text)
   "Finds all texts with URI format and add link properties to them."  
   (setq regex-index 0)
@@ -336,13 +333,7 @@ STATUS must be a status data, one element taken from the result of `identica-tim
 	     (screen-name (match-string-no-properties 1 text)))
 	(add-text-properties (+ 1 (match-beginning 0))
 			     (match-end 0)
-			     `(mouse-face
-			       highlight
-			       face identica-uri-face
-			       uri ,(concat "https://" (sn-account-server sn-current-account) "/" screen-name)
-			       uri-in-text ,(concat "https://" (sn-account-server sn-current-account) "/" screen-name)
-			       tag ,nil
-			       group ,nil)
+			     `(mouse-face highlight 'screen-name ,screen-name)
 			     text))
       (setq regex-index (match-end 0))))
   text)
@@ -361,13 +352,7 @@ STATUS must be a status data, one element taken from the result of `identica-tim
 	     (group-name (match-string-no-properties 1 text)))
 	(add-text-properties (+ 1 (match-beginning 0))
 			     (match-end 0)
-			     `(mouse-face
-			       highlight
-			       face identica-uri-face
-			       uri ,(concat "https://" (sn-account-server sn-current-account) "/group/" group-name)
-			       uri-in-text ,(concat "https://" (sn-account-server sn-current-account) "/group/" group-name)
-			       tag ,nil
-			       group ,group-name)
+			     `(mouse-face highlight 'group ,group-name)
 			     text))
       (setq regex-index (match-end 0))))
   text)
@@ -385,13 +370,7 @@ STATUS must be a status data, one element taken from the result of `identica-tim
 	     (tag-name (match-string-no-properties 1 text)))
 	(add-text-properties (+ 1 (match-beginning 0))
 			     (match-end 0)
-			     `(mouse-face
-			       highlight
-			       face identica-uri-face
-			       uri ,(concat "https://" (sn-account-server sn-current-account) "/tag/" tag-name)
-			       uri-in-text ,(concat "https://" (sn-account-server sn-current-account) "/tag/" tag-name)
-			       tag ,tag-name
-			       group ,nil)
+			     `(mouse-face highlight 'tag ,tag-name)
 			     text))
       (setq regex-index (match-end 0))))
   text)
@@ -408,13 +387,7 @@ STATUS must be a status data, one element taken from the result of `identica-tim
       (let* ((uri (match-string-no-properties 0 text)))
 	(add-text-properties (+ 1 (match-beginning 0))
 			     (match-end 0)
-			     `(mouse-face
-			       highlight
-			       face identica-uri-face
-			       uri ,uri
-			       uri-in-text ,uri
-			       tag ,nil
-			       group ,nil)
+			     `(mouse-face highlight 'uri ,uri 'uri-in-text ,uri)
 			     text))
       (setq regex-index (match-end 0))))
   text)
@@ -431,13 +404,7 @@ STATUS must be a status data, one element taken from the result of `identica-tim
       (let* ((uri (match-string-no-properties 0 text)))	     
 	(add-text-properties (+ 1 (match-beginning 0))
 			     (match-end 0)
-			     `(mouse-face
-			       highlight
-			       face identica-uri-face
-			       uri ,uri
-			       uri-in-text ,uri
-			       tag ,nil
-			       group ,nil)
+			     `(mouse-face highlight 'uri ,uri 'uri-in-text ,uri)
 			     text))
       (setq regex-index (match-end 0))))
   text)
@@ -457,32 +424,10 @@ STATUS must be a status data, one element taken from the result of `identica-tim
     (let ((uri (match-string-no-properties 1 source))
 	  (caption (match-string-no-properties 2 source)))
       (setq source caption)
-      (add-text-properties
-       0 (length source)
-       `(mouse-face highlight
-		    face identica-uri-face
-		    source ,source)
-       source)
+      (add-text-properties 0 (length source)
+			   `(mouse-face highlight 'source ,source)
+			   source)
       source)))
 
-
-(defun identica-add-screen-name-properties (user-screen-name)
-  "Return the string USER-SCREEN-NAME with faces and properties for displaying a screen name."
-  (add-text-properties
-   0 (length user-screen-name)
-   `(mouse-face highlight
-		face identica-username-face
-		uri ,user-profile-url
-		face identica-username-face)
-   user-screen-name))
-
-(defun identica-add-username-properties (user-name)
-  "Return the string USER-NAME with faces and properties for displaying a username."
-  (add-text-properties
-       0 (length user-name)
-       `(mouse-face highlight
-		    uri ,user-profile-url
-		    face identica-username-face)
-       user-name))
 
 (provide 'identica-interface)

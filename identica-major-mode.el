@@ -25,6 +25,7 @@
 
 
 (require 'identica-commands)
+(require 'identica-common-things)
 ;;(require 'identica-mode)
 
 (defvar identica-mode-map (make-sparse-keymap "Identi.ca"))
@@ -210,25 +211,7 @@ paragraphs. Instead, use visual-line-mode or longlines-mode if
 
 
 					; ____________________
-					; Font-lock regexps
-(defconst identica-screen-name-regexp "@\\([_[:word:]0-9]+\\)"
-  "Regexp for user-names.")
-
-(defconst identica-group-name-regexp "!\\([_[:word:]0-9\-]+\\)"
-  "Regexp for group-names.")
-  
-(defconst identica-tag-name-regexp "#\\([_[:word:]0-9\-]+\\)"
-  "Regexp for tag-names.")
-
-(defconst identica-url-regexp "\\(ur1\.ca/[a-z0-9]+/?\\|https?://[-_.!~*'()[:word:]0-9\;/?:@&=+$,%#]+\\)"
-  "Regexp for http URLs and ur1 shorter.")
-
-(defconst identica-heart-regexp "❤"
-  "Regexp for the favored heart char.")
-
-(defconst identica-redent-regexp "♺"
-  "Regexp for the redent heart char.")
-
+					; Font-lock 
 ;;
 (defvar identica-mode-font-lock 
   (list

@@ -41,4 +41,27 @@
 For use as a predicate for sort."
   (< (assoc-default 'id b) (assoc-default 'id a)))
 
+
+
+					; ____________________
+					; Regexps for identifing texts
+
+(defconst identica-screen-name-regexp "@\\([_[:word:]0-9]+\\)"
+  "Regexp for user-names.")
+
+(defconst identica-group-name-regexp "!\\([_[:word:]0-9\-]+\\)"
+  "Regexp for group-names.")
+  
+(defconst identica-tag-name-regexp "#\\([_[:word:]0-9\-]+\\)"
+  "Regexp for tag-names.")
+
+(defconst identica-url-regexp "\\(ur1\.ca/[a-z0-9]+/?\\|https?://[-_.!~*'()[:word:]0-9\;/?:@&=+$,%#]+\\)"
+  "Regexp for http URLs and ur1 shorter.")
+
+(defconst identica-heart-regexp "❤"
+  "Regexp for the favored heart char.")
+
+(defconst identica-redent-regexp "♺"
+  "Regexp for the redent heart char.")
+
 (provide 'identica-common-things)
