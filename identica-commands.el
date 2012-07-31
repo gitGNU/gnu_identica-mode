@@ -42,6 +42,8 @@
 (require 'identica-common-things)
 (require 'identica-translator)
 (require 'identica-http)
+(require 'identica-major-mode)
+(require 'identica-interface)
 
 (defun identica-enable-oauth ()  
   "Enables oauth for identica-mode."

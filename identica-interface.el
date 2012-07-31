@@ -27,6 +27,7 @@
 ;;
 
 (require 'identica-translator)
+(require 'identica-common-things)
 
 (defcustom identica-blacklist '()
   "List of regexes used to filter statuses, evaluated after status formatting is applied."
@@ -57,6 +58,15 @@
   :type 'string
   :group 'identica-mode)
 
+
+(defvar identica-buffer "*identica*")
+
+(defun identica-buffer (&optional method)
+  "Create a buffer for use by identica-mode.
+Initialize the global method with the default, or with METHOD, if present."
+  (unless method
+    (setq method "friends_timeline"))
+  (get-buffer-create identica-buffer))
 
 ;; This the original render-timeline function, I'll keep it for reference.
 ;;
@@ -179,14 +189,17 @@ A filter is applied as a blacklist of dents."
     
     ;; Mix everything from result into a string and return it.
     (let ((formatted-status (apply 'concat (nreverse result))))
-      (add-text-properties 0 (length formatted-status)
-			   `(username, (attr 'user-screen-name)
-				       id, (attr 'id)
-				       text, (attr 'text)
-				       profile-url, (attr 'user-profile-url)
+      (flet ((attr (key)
+		   (assoc-default key status)))
+
+	(add-text-properties 0 (length formatted-status)
+			     `(username, (attr 'user-screen-name)
+					 id, (attr 'id)
+					 text, (attr 'text)
+					 profile-url, (attr 'user-profile-url)
 				       conversation-id, (attr 'conversation-id))
-			   formatted-status)
-      formatted-status)))
+			     formatted-status)
+	formatted-status))))
 
 
 (defun identica-format-token (token status)
@@ -300,7 +313,6 @@ STATUS must be a status data, one element taken from the result of `identica-tim
       (add-text-properties
        0 (length time-string)
        `(mouse-face highlight
-		    face identica-uri-face
 		    ;; uri ,url ;; TODO:
 		    )
        time-string)
@@ -375,29 +387,12 @@ STATUS must be a status data, one element taken from the result of `identica-tim
       (setq regex-index (match-end 0))))
   text)
 
-(defun identica-find-and-add-ur1-properties (text)
-  "Finds all texts with URI format and add link properties to them."  
-  (setq regex-index 0)
-  (while regex-index
-    (setq regex-index
-	  (string-match identica-ur1-regexp
-			text
-			regex-index))
-    (when regex-index
-      (let* ((uri (match-string-no-properties 0 text)))
-	(add-text-properties (+ 1 (match-beginning 0))
-			     (match-end 0)
-			     `(mouse-face highlight 'uri ,uri 'uri-in-text ,uri)
-			     text))
-      (setq regex-index (match-end 0))))
-  text)
-
 (defun identica-find-and-add-http-url-properties (text)
   "Finds all texts with URI format and add link properties to them."  
   (setq regex-index 0)
   (while regex-index
     (setq regex-index
-	  (string-match identica-http-url-regexp
+	  (string-match identica-url-regexp
 			text
 			regex-index))
     (when regex-index
@@ -414,7 +409,6 @@ STATUS must be a status data, one element taken from the result of `identica-tim
   (setq text (identica-find-and-add-screen-name-properties text))
   (setq text (identica-find-and-add-group-name-properties text))
   (setq text (identica-find-and-add-tag-name-properties text))
-  (setq text (identica-find-and-add-ur1-properties text))
   (setq text (identica-find-and-add-http-url-properties text))
   text)
 

@@ -24,7 +24,6 @@
 ;;
 
 
-(require 'identica-commands)
 (require 'identica-common-things)
 ;;(require 'identica-mode)
 
@@ -464,16 +463,6 @@ If BUFFER is not present or nil, set the `mode-name' in the `identica-buffer'."
 		timeline-url))
 	;;	(debug-print mode-name)
 	))))
-
-
-(defvar identica-buffer "*identica*")
-(defun identica-buffer (&optional method)
-  "Create a buffer for use by identica-mode.
-Initialize the global method with the default, or with METHOD, if present."
-  (unless method
-    (setq method "friends_timeline"))
-  (get-buffer-create identica-buffer))
-
 
 
 (provide 'identica-major-mode)
