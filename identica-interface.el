@@ -274,7 +274,6 @@ STATUS must be a status data, one element taken from the result of `identica-tim
 	  )
       (add-text-properties 0 (length in-reply-to-string)
 			   `(mouse-face highlight
-			    		face identica-uri-face
 					;; uri ,url ;; TODO:
 					)
 			   in-reply-to-string)
@@ -330,7 +329,7 @@ STATUS must be a status data, one element taken from the result of `identica-tim
 
 (defun identica-format-favored (likes)			 
   (when (string= "true" likes)
-    (propertize "❤" 'face 'identica-heart-face)))
+    (propertize "❤" 'favored t)))
 
 (defun identica-find-and-add-screen-name-properties (text)
   "Finds all texts with URI format and add link properties to them."  
