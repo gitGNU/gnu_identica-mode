@@ -447,24 +447,6 @@ prompt; \"Down\" counts down from (sn-account-textlimit sn-current-account); \"U
            (identica-update-status-edit-in-edit-buffer init-str msgtype method-class method parameters reply-to-id))
           (t (error "Unknown update-input-method in identica-update-status: %S" update-input-method)))))
 
-(defun identica-get-timeline (&optional server parameters)
-  (setq identica-remote-server server)
-  (unless parameters (setq parameters `(("count" . ,(int-to-string identica-statuses-count)))))
-  (when (not (eq (sn-account-last-timeline-retrieved sn-current-account) identica-method))
-    (setq identica-timeline-last-update nil
-	  identica-timeline-data nil))
-  (let ((buf (get-buffer identica-buffer)))
-    (if (not buf)
-	(identica-stop)
-      (progn
-	(when (not identica-method)
-	  (setq identica-method "friends_timeline"))
-        (identica-http-get (or server (sn-account-server sn-current-account))
-                           (if server "none"
-                             (sn-account-auth-mode sn-current-account))
-                           identica-method-class identica-method parameters))))
-  (identica-get-icons))
-
 (defun identica-get-icons ()
   "Retrieve icons if icon-mode is active."
   (if identica-icon-mode

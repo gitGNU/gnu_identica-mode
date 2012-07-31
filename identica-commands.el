@@ -39,10 +39,9 @@
 ;; ____________________
 ;;
 
-(require 'identica-major-mode)
+(require 'identica-common-things)
 (require 'identica-translator)
 (require 'identica-http)
-(require 'identica-mode)
 
 (defun identica-enable-oauth ()  
   "Enables oauth for identica-mode."
@@ -513,5 +512,44 @@ un-highlight all other entries."
 (defun identica-kill-buffer-function ()
   (when (eq major-mode 'identica-mode)
     (identica-stop)))
+
+
+;;
+;; This is the old get-timeline function. For simplicity there is a new `identica-get-timeline' function.
+;; TODO: Needs to be analized. 
+;;
+(defun identica-get-timeline-orig (&optional server parameters)
+  (setq identica-remote-server server)
+  (unless parameters (setq parameters `(("count" . ,(int-to-string identica-statuses-count)))))
+  (when (not (eq (sn-account-last-timeline-retrieved sn-current-account) identica-method))
+    (setq identica-timeline-last-update nil
+	  identica-timeline-data nil))
+  (let ((buf (get-buffer identica-buffer)))
+    (if (not buf)
+	(identica-stop)
+      (progn
+	(when (not identica-method)
+	  (setq identica-method "friends_timeline"))
+        (identica-http-get (or server (sn-account-server sn-current-account))
+                           (if server "none"
+                             (sn-account-auth-mode sn-current-account))
+                           identica-method-class identica-method parameters))))
+  (identica-get-icons))
+
+
+(defun identica-process-http-buffer-1 (&rest r)
+  "This is a temporary function made for parameters compatibility with the HTTP \"sentinel\" for `identica-http-get-sentinel'
+and `identica-process-http-buffer' function."
+  (with-current-buffer identica-http-buffer
+    (identica-process-http-buffer))
+  (with-current-buffer (identica-buffer)
+    (erase-buffer)
+    (identica-render-timeline)))
+
+(defun identica-get-timeline ()
+  (setq identica-http-get-sentinel 'identica-process-http-buffer-1)
+  (identica-http-get "statuses" "friends_timeline" nil)
+  (switch-to-buffer (identica-buffer))  
+  )
 
 (provide 'identica-commands)
