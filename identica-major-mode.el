@@ -140,7 +140,9 @@ paragraphs. Instead, use visual-line-mode or longlines-mode if
 	  (:eval (identica-mode-line-buffer-identification))))
   (identica-update-mode-line)
   (set-syntax-table identica-mode-syntax-table)
-  (font-lock-mode -1)
+  (set (make-local-variable 'font-lock-defaults)
+       identica-mode-font-lock)
+  (font-lock-mode t)
   (if identica-soft-wrap-status
       (if (fboundp 'visual-line-mode)
           (visual-line-mode t)
@@ -148,7 +150,7 @@ paragraphs. Instead, use visual-line-mode or longlines-mode if
 	    (longlines-mode t))))
   ;; Carefull with this!!! `kill-buffer-hook' is used globally!!! :-S
   ;; `identica-kill-buffer-function' must be reachable, if not you'll have a great emacs problem!
-  (add-hook 'kill-buffer-hook 'identica-kill-buffer-function) 
+  ;;(add-hook 'kill-buffer-hook 'identica-kill-buffer-function) 
   (run-mode-hooks 'identica-mode-hook))
 
 
@@ -160,14 +162,27 @@ paragraphs. Instead, use visual-line-mode or longlines-mode if
   )
 
 (defvar identica-username-face 'identica-username-face)
+(defvar identica-tagname-face 'identica-tagname-face)
+(defvar identica-groupname-face 'identica-groupname-face)
 (defvar identica-uri-face 'identica-uri-face)
 (defvar identica-reply-face 'identica-reply-face)
 (defvar identica-stripe-face 'identica-stripe-face)
 (defvar identica-highlight-face 'identica-highlight-face)
+(defvar identica-heart-face 'identica-heart-face)
+(defvar identica-redent-face 'identica-redent-face)
+
 
 (defface identica-username-face
   `((t nil)) "" :group 'identica-mode-faces)
 (set-face-attribute 'identica-username-face nil :underline t)
+
+(defface identica-groupname-face
+  `((t nil)) "" :group 'identica-mode-faces)
+(set-face-attribute 'identica-groupname-face nil :underline t)
+
+(defface identica-tagname-face
+  `((t nil)) "" :group 'identica-mode-faces)
+(set-face-attribute 'identica-tagname-face nil :underline t)
 
 (defface identica-reply-face
   `((t nil)) "" :group 'identica-mode-faces)
@@ -189,6 +204,49 @@ paragraphs. Instead, use visual-line-mode or longlines-mode if
   `((t nil)) "" :group 'identica-mode-faces)
 (set-face-attribute 'identica-heart-face nil :foreground "firebrick1" :height 2.0)  
 
+(defface identica-redent-face
+  `((t nil)) "" :group 'identica-mode-faces)
+(set-face-attribute 'identica-redent-face nil :foreground "firebrick1" :height 2.0)  
+
+
+					; ____________________
+					; Font-lock regexps
+(defconst identica-screen-name-regexp "@\\([_[:word:]0-9]+\\)"
+  "Regexp for user-names.")
+
+(defconst identica-group-name-regexp "!\\([_[:word:]0-9\-]+\\)"
+  "Regexp for group-names.")
+  
+(defconst identica-tag-name-regexp "#\\([_[:word:]0-9\-]+\\)"
+  "Regexp for tag-names.")
+
+(defconst identica-url-regexp "\\(ur1\.ca/[a-z0-9]+/?\\|https?://[-_.!~*'()[:word:]0-9\;/?:@&=+$,%#]+\\)"
+  "Regexp for http URLs and ur1 shorter.")
+
+(defconst identica-heart-regexp "❤"
+  "Regexp for the favored heart char.")
+
+(defconst identica-redent-regexp "♺"
+  "Regexp for the redent heart char.")
+
+;;
+(defvar identica-mode-font-lock 
+  (list
+   ;; font-lock-keywords
+   (list
+    (cons identica-screen-name-regexp 'identica-username-face) 
+    (cons identica-group-name-regexp 'identica-groupname-face)
+    (cons identica-tag-name-regexp 'identica-tagname-face)
+    (cons identica-url-regexp 'identica-uri-face)     
+    (cons identica-heart-regexp 'identica-heart-face)
+    (cons identica-redent-regexp 'identica-redent-face)
+    )
+   
+   ;; Otros...
+   )
+  ;;
+  "Font lock for `identica-mode'"
+  )
 
 ;; Icons
 ;;; ACTIVE/INACTIVE

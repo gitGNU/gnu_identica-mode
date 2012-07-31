@@ -485,19 +485,4 @@ STATUS must be a status data, one element taken from the result of `identica-tim
 		    face identica-username-face)
        user-name))
 
-(defconst identica-screen-name-regexp "@\\([_[:word:]0-9]+\\)"
-  "Regexp for user-names.")
-
-(defconst identica-group-name-regexp "!\\([_[:word:]0-9\-]+\\)"
-  "Regexp for group-names.")
-  
-(defconst identica-tag-name-regexp "#\\([_[:word:]0-9\-]+\\)"
-  "Regexp for tag-names.")
-
-(defconst identica-ur1-regexp "ur1\.ca/[a-z0-9]+/?"
-  "ur1 shortener regexp.")
-
-(defconst identica-http-url-regexp "https?://[-_.!~*'()[:word:]0-9\;/?:@&=+$,%#]+"
-  "Regexp for http URLs.")
-
 (provide 'identica-interface)
