@@ -139,9 +139,9 @@ paragraphs. Instead, use visual-line-mode or longlines-mode if
 	`(,(default-value 'mode-line-buffer-identification)
 	  (:eval (identica-mode-line-buffer-identification))))
   (identica-update-mode-line)
-  (set-syntax-table identica-mode-syntax-table)
-  (set (make-local-variable 'font-lock-keywords)
-       identica-mode-font-lock-keywords)
+  (set-syntax-table identica-mode-syntax-table)  
+  (set (make-local-variable 'font-lock-defaults)
+       '(identica-mode-font-lock-keywords))
   (font-lock-mode t)
   (if identica-soft-wrap-status
       (if (fboundp 'visual-line-mode)
