@@ -45,6 +45,15 @@
 (require 'identica-major-mode)
 (require 'identica-interface)
 
+(defvar identica-current-method "statuses"
+  "Current method. This variable is used for `identica-get-timeline' if no parameter METHOD is given.")
+
+(defvar identica-current-method-class "friends_timeline"
+  "Current method class. This variable is used for `identica-get-timeline' if no parameter METHOD-CLASS is given.")
+
+(defvar identica-current-parameters nil
+  "Current parameters. This variable is used for `identica-get-timeline' if no parameter PARAMETERS is given.")
+
 (defun identica-enable-oauth ()  
   "Enables oauth for identica-mode."
   (interactive)
@@ -267,9 +276,7 @@ we adjust point within the right frame."
 
 (defun identica-friends-timeline ()
   (interactive)
-  (setq identica-method "friends_timeline")
-  (setq identica-method-class "statuses")
-  (identica-get-timeline))
+  (identica-get-timeline "statuses""friends_timeline"))
 
 (defun identica-replies-timeline ()
   (interactive)
@@ -548,10 +555,35 @@ and `identica-process-http-buffer' function."
     (erase-buffer)
     (identica-render-timeline)))
 
-(defun identica-get-timeline ()
+(defun identica-get-timeline (&optional method-class method parameters)
+  "Update the current method-class, method and parameters and then visit that timeline.
+
+If METHOD-CLASS, METHOD and PARAMETERS is nil or absent then use this variables:
+
+* METHOD-CLASS: `identica-current-method-class'
+* METHOD: `identica-current-method'
+* PARAMETERS: `identica-current-parameters'
+
+If any of them is not nil, then update the identica-current-? value.
+"
+
+  (if method-class
+      (setq identica-current-method-class method-class)
+    (setq method-class identica-current-method-class))
+  (if method
+      (setq identica-current-method method)
+    (setq method identica-current-method))
+  (if parameters
+      (setq identica-current-parameters parameters)
+    (setq parameters identica-current-parameters))
+
   (setq identica-http-get-sentinel 'identica-process-http-buffer-1)
-  (identica-http-get "statuses" "friends_timeline" nil)
-  (switch-to-buffer (identica-buffer))  
+  (identica-http-get method-class method parameters)
+  (switch-to-buffer (identica-buffer))
+  ;; Set the major mode!
+  (with-current-buffer (identica-buffer)
+    (identica-mode)
+    )
   )
 
 (provide 'identica-commands)
