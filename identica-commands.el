@@ -45,11 +45,39 @@
 (require 'identica-major-mode)
 (require 'identica-interface)
 
-(defvar identica-current-method "statuses"
-  "Current method. This variable is used for `identica-get-timeline' if no parameter METHOD is given.")
+(defcustom identica-default-timeline "friends_timeline"
+  "Default timeline to retrieve."
+  :type 'string
+  :options '("friends_timeline" "public_timeline" "replies" "user_timeline")
+  :group 'identica-mode)
 
-(defvar identica-current-method-class "friends_timeline"
-  "Current method class. This variable is used for `identica-get-timeline' if no parameter METHOD-CLASS is given.")
+(defun identica-default-method ()
+  "Return the default method depending on the value of `identica-default-timeline'."
+  identica-default-timeline) ;; There's nothing to process or calculate!
+
+(defun identica-default-method-class ()
+  "Return the default method-class depending on the value of `identica-default-timeline'."
+  "statuses");;nothing to process!!!
+  ;; (cond
+  ;;  ((string= identica-default-timeline "friends_timeline")
+  ;;   "statuses")
+  ;;  ((string= identica-default-timeline "public_timeline")
+  ;;   "statuses")
+  ;;  ((string= identica-default-timeline "replies")
+  ;;   "statuses")
+  ;;  ((string= identica-default-timeline "user_timeline")
+  ;;   "statuses")
+  ;;  ))
+   
+(defvar identica-current-method nil
+  "Current method. This variable is used for `identica-get-timeline' if no parameter METHOD is given.
+
+If nil then use default method given by `identica-default-method'.")
+
+(defvar identica-current-method-class nil
+  "Current method class. This variable is used for `identica-get-timeline' if no parameter METHOD-CLASS is given.
+
+If nil the use default method-class given by `identica-default-method-class'.")
 
 (defvar identica-current-parameters nil
   "Current parameters. This variable is used for `identica-get-timeline' if no parameter PARAMETERS is given.")
@@ -274,15 +302,17 @@ we adjust point within the right frame."
 	  identica-timeline-data nil)
     (identica-current-timeline)))
 
+					; --------------------
+					; Timelines
+					;
+
 (defun identica-friends-timeline ()
   (interactive)
-  (identica-get-timeline "statuses""friends_timeline"))
+  (identica-get-timeline "statuses" "friends_timeline"))
 
 (defun identica-replies-timeline ()
   (interactive)
-  (setq identica-method "replies")
-  (setq identica-method-class "statuses")
-  (identica-get-timeline))
+  (identica-get-timeline "statuses" "replies"))
 
 ;; (defun identica-direct-messages-timeline ()
 ;;   (interactive)
@@ -292,29 +322,20 @@ we adjust point within the right frame."
 
 (defun identica-public-timeline ()
   (interactive)
-  (setq identica-method "public_timeline")
-  (setq identica-method-class "statuses")
-  (identica-get-timeline))
+  (identica-get-timeline "statuses" "public_timeline"))
 
 (defun identica-group-timeline (&optional group)
   (interactive)
   (unless group
     (setq group (read-from-minibuffer "Group: " nil nil nil nil nil t)))
-  (setq identica-method-class "statusnet/groups")
-  (if (string-equal group "")
-      (setq identica-method "timeline")
-    (setq identica-method (concat "timeline/" group)))
-  (identica-get-timeline))
+  (identica-get-timeline "statusnet/groups" (concat "timeline/" group)))
 
 (defun identica-tag-timeline (&optional tag)
   (interactive)
   (unless tag
     (setq tag (read-from-minibuffer "Tag: " nil nil nil nil nil t)))
   (setq identica-method-class "statusnet/tags")
-  (if (string-equal tag "")
-      (setq identica-method "timeline")
-    (setq identica-method (concat "timeline/" tag)))
-  (identica-get-timeline))
+  (identica-get-timeline "statusnet/tags" (concat "timeline/" tag)))
 
 (defun identica-user-timeline (&optional from-user)
   "Retrieve user timeline given its username.
@@ -325,12 +346,7 @@ If nil, will ask for username in minibuffer."
   (unless from-user
     (setq from-user (read-from-minibuffer "User [Empty for mine]: "
 					  nil nil nil nil nil t)))
-  (setq identica-method-class "statuses")
-  (if (string-equal from-user "")
-      (setq identica-method "user_timeline")
-    (setq identica-method (concat "user_timeline/" from-user)))
-  (identica-get-timeline)
-  )
+  (identica-get-timeline "statuses" (concat "user_timeline/" from-user)))
 
 (defun identica-conversation-timeline ()
   (interactive)
@@ -370,6 +386,8 @@ If nil, will ask for username in minibuffer."
 			(- (assoc-default 'id (car (last identica-timeline-data))) 1))))
 		 ()))
        nil))))
+
+					; --------------------
 
 (defun identica-update-status-interactive ()
   (interactive)
@@ -511,12 +529,13 @@ un-highlight all other entries."
   (interactive)
   ;; Initialize everything  
   (switch-to-buffer (identica-buffer))
-  (kill-all-local-variables)
-
+  ;;(kill-all-local-variables)
+  
   (identica-mode-init-variables)
-  (identica-retrieve-configuration) 
+  ;;  (identica-retrieve-configuration) 
   ;; Start the major mode!
-  (identica-mode))
+  (identica-mode)
+  (identica-get-timeline))
 
 (defun identica-kill-buffer-function ()
   (when (eq major-mode 'identica-mode)
@@ -553,7 +572,8 @@ and `identica-process-http-buffer' function."
     (identica-process-http-buffer))
   (with-current-buffer (identica-buffer)
     (erase-buffer)
-    (identica-render-timeline)))
+    (identica-render-timeline)
+    (goto-char (point-min))))
 
 (defun identica-get-timeline (&optional method-class method parameters)
   "Update the current method-class, method and parameters and then visit that timeline.
@@ -566,6 +586,8 @@ If METHOD-CLASS, METHOD and PARAMETERS is nil or absent then use this variables:
 
 If any of them is not nil, then update the identica-current-? value.
 "
+
+  (identica-check-defaults)
 
   (if method-class
       (setq identica-current-method-class method-class)
@@ -584,6 +606,15 @@ If any of them is not nil, then update the identica-current-? value.
   (with-current-buffer (identica-buffer)
     (identica-mode)
     )
+  )
+
+(defun identica-check-defaults ()
+  "If identica-current-* variables are nil then initialize them with defaults values."
+  (unless identica-current-method
+    (setq identica-current-method (identica-default-method)))
+  (unless identica-current-method-class
+    (setq identica-current-method-class (identica-default-method-class)))
+  ;; if parameters is nil, nothing to do.
   )
 
 (provide 'identica-commands)

@@ -135,12 +135,6 @@
   :type 'integer
   :group 'identica-mode)
 
-(defcustom identica-default-timeline "friends_timeline"
-  "Default timeline to retrieve."
-  :type 'string
-  :options '("friends_timeline" "public_timeline" "replies")
-  :group 'identica-mode)
-
 (defcustom identica-statuses-count 20
   "Default number of statuses to retrieve."
   :type 'integer
@@ -489,7 +483,7 @@ prompt; \"Down\" counts down from (sn-account-textlimit sn-current-account); \"U
   (identica-http-init-variables))
 
 (provide 'identica-mode)
-(add-hook 'identica-load-hook 'identica-autoload-oauth)
-(run-hooks 'identica-load-hook)
+;;(add-hook 'identica-load-hook 'identica-autoload-oauth)
+;;(run-hooks 'identica-load-hook)
 
 ;;; identica-mode.el ends here
