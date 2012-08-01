@@ -222,9 +222,9 @@ STATUS must be a status data, one element taken from the result of `identica-tim
       ((?d)                         ; %d - description
        (identica-format-user-description (attr 'user-description)))
       ((?l)                         ; %l - location
-       (identica-format-location-1 (attr 'user-location)))
-      ((?L)                         ; %L - " [location]"
        (identica-format-location-2 (attr 'user-location)))
+      ((?L)                         ; %L - " [location]"
+       (identica-format-location-1 (attr 'user-location)))
       ((?u)                         ; %u - url
        (attr 'user-url))
       ((?U)                         ; %U - profile url
@@ -274,7 +274,7 @@ STATUS must be a status data, one element taken from the result of `identica-tim
   "How source will be formated?"
   (setq source (identica-make-source-pretty source))
   (add-text-properties 0 (length source)
-		       '('source t)
+		       '(source t)
 		       source)
   source)
 
@@ -301,7 +301,7 @@ STATUS must be a status data, one element taken from the result of `identica-tim
 	  ;; (url (identica-get-status-url reply-id)) ;; TODO:
 	  )
       (add-text-properties 0 (length in-reply-to-string)
-			   `(mouse-face highlight 'in-reply t)
+			   `(mouse-face highlight in-reply t)
 			   in-reply-to-string)
       (concat " " in-reply-to-string))))
 
@@ -340,7 +340,7 @@ STATUS must be a status data, one element taken from the result of `identica-tim
       ;; (setq url (identica-get-status-url (attr 'id))) ;; TODO:
       ;; make status url clickable
       (add-text-properties  0 (length time-string)
-			    `(mouse-face highlight 'seconds-ago t)
+			    `(mouse-face highlight seconds-ago t)
 			    time-string)
       time-string)))
 
@@ -379,7 +379,7 @@ STATUS must be a status data, one element taken from the result of `identica-tim
 	     (screen-name (match-string-no-properties 1 text)))
 	(add-text-properties (+ 1 (match-beginning 0))
 			     (match-end 0)
-			     `(mouse-face highlight 'screen-name ,screen-name)
+			     `(mouse-face highlight screen-name ,screen-name)
 			     text))
       (setq regex-index (match-end 0))))
   text)
@@ -398,7 +398,7 @@ STATUS must be a status data, one element taken from the result of `identica-tim
 	     (group-name (match-string-no-properties 1 text)))
 	(add-text-properties (+ 1 (match-beginning 0))
 			     (match-end 0)
-			     `(mouse-face highlight 'group ,group-name)
+			     `(mouse-face highlight group ,group-name)
 			     text))
       (setq regex-index (match-end 0))))
   text)
@@ -416,7 +416,7 @@ STATUS must be a status data, one element taken from the result of `identica-tim
 	     (tag-name (match-string-no-properties 1 text)))
 	(add-text-properties (+ 1 (match-beginning 0))
 			     (match-end 0)
-			     `(mouse-face highlight 'tag ,tag-name)
+			     `(mouse-face highlight tag ,tag-name)
 			     text))
       (setq regex-index (match-end 0))))
   text)
@@ -433,7 +433,7 @@ STATUS must be a status data, one element taken from the result of `identica-tim
       (let* ((uri (match-string-no-properties 0 text)))	     
 	(add-text-properties (+ 1 (match-beginning 0))
 			     (match-end 0)
-			     `(mouse-face highlight 'uri ,uri 'uri-in-text ,uri)
+			     `(mouse-face highlight uri ,uri uri-in-text ,uri)
 			     text))
       (setq regex-index (match-end 0))))
   text)
@@ -453,7 +453,7 @@ STATUS must be a status data, one element taken from the result of `identica-tim
 	  (caption (match-string-no-properties 2 source)))
       (setq source caption)
       (add-text-properties 0 (length source)
-			   `(mouse-face highlight 'source ,source)
+			   `(mouse-face highlight source ,source)
 			   source)
       source)))
 

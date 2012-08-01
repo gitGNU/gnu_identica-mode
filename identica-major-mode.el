@@ -140,8 +140,8 @@ paragraphs. Instead, use visual-line-mode or longlines-mode if
 	  (:eval (identica-mode-line-buffer-identification))))
   (identica-update-mode-line)
   (set-syntax-table identica-mode-syntax-table)
-  (set (make-local-variable 'font-lock-defaults)
-       identica-mode-font-lock)
+  (set (make-local-variable 'font-lock-keywords)
+       identica-mode-font-lock-keywords)
   (font-lock-mode t)
   (if identica-soft-wrap-status
       (if (fboundp 'visual-line-mode)
@@ -209,23 +209,147 @@ paragraphs. Instead, use visual-line-mode or longlines-mode if
 (set-face-attribute 'identica-redent-face nil :foreground "firebrick1" :height 2.0)  
 
 
+(defface identica-username-dent-face 
+  '((t :weight bold
+       :slant italic
+       :foreground "spring green"
+       ))
+  "Face for the username part in a dent message."
+  :group 'identica-mode-faces)
+
+(defface identica-source-dent-face 
+  '((t :slant italic
+       :foreground "spring green"
+       ))
+  "Face for the username part in a dent message."
+  :group 'identica-mode-faces)
+
+(defface identica-location-dent-face 
+  '((t :foreground "spring green"
+       ))
+  "Face for the username part in a dent message."
+  :group 'identica-mode-faces)
+
+(defface identica-in-reply-dent-face 
+  '((t :underline t
+       :foreground "spring green"
+       ))
+  "Face for the username part in a dent message."
+  :group 'identica-mode-faces)
+
+(defface identica-protected-dent-face 
+  '((t :weight bold
+       :foreground "spring green"
+       ))
+  "Face for the username part in a dent message."
+  :group 'identica-mode-faces)
+
+(defface identica-created-at-dent-face   
+  '((t :weight bold
+       :slant italic
+       :foreground "spring green"
+       ))
+  "Face for the username part in a dent message."
+  :group 'identica-mode-faces)
+
+(defface identica-seconds-ago-dent-face 
+  '((t :inherit identica-created-at-dent-face
+       ))
+  "Face for the username part in a dent message."
+  :group 'identica-mode-faces)
+
+(defface identica-truncated-dent-face 
+  '((t :weight bold
+       :foreground "spring green"
+       ))
+  "Face for the username part in a dent message."
+  :group 'identica-mode-faces)
+
+
+;; taken from diaspora.el
+(defun identica-check-is-property (limit property)
+  "Return t if the symbol property given by PROPERTY is in any of the text's properties between current `point' up to LIMIT.
+Set `match-data' with the beginning and end position of the first text founded with that property.
+
+Create a new function like `identica-check-is-message-separator' so you can use this function with a font-lock property."
+  ;; Point is on a link-to-publication text!
+  (let ((beg-pos (text-property-any (point) limit property t))
+	(end-pos 0)
+	)
+    (if beg-pos	
+	(progn
+	  (goto-char beg-pos)
+	  (setq end-pos 
+		(next-single-property-change (point) property nil limit)) ;;find the last char where the property is false.    
+	    
+	  ;; Set match-data
+	  (set-match-data (list beg-pos end-pos))
+	  t
+	  )
+      nil
+      )
+    )
+  )
+
+(defun identica-check-is-user-name (limit)  
+  "Return t if the text from the current point up to the limit has the property user-name setted to t."
+  (identica-check-is-property limit 'user-name))
+
+(defun identica-check-is-source (limit)  
+  "Return t if the text from the current point up to the limit has the property user-name setted to t."
+  (identica-check-is-property limit 'source))
+
+(defun identica-check-is-location (limit)  
+  "Return t if the text from the current point up to the limit has the property user-name setted to t."
+  (identica-check-is-property limit 'location))
+
+(defun identica-check-is-in-reply (limit)  
+  "Return t if the text from the current point up to the limit has the property user-name setted to t."
+  (identica-check-is-property limit 'in-reply))
+
+(defun identica-check-is-protected (limit)  
+  "Return t if the text from the current point up to the limit has the property user-name setted to t."
+  (identica-check-is-property limit 'user-protected))
+
+(defun identica-check-is-created-at (limit)  
+  "Return t if the text from the current point up to the limit has the property user-name setted to t."
+  (identica-check-is-property limit 'created-at))
+
+(defun identica-check-is-seconds-ago (limit)  
+  "Return t if the text from the current point up to the limit has the property user-name setted to t."
+  (identica-check-is-property limit 'seconds-ago))
+
+(defun identica-check-is-truncated (limit)  
+  "Return t if the text from the current point up to the limit has the property user-name setted to t."
+  (identica-check-is-property limit 'truncated))
+
+(defun identica-check-is-favored (limit)  
+  "Return t if the text from the current point up to the limit has the property user-name setted to t."
+  (identica-check-is-property limit 'favored))
+
+
 					; ____________________
 					; Font-lock 
 ;;
-(defvar identica-mode-font-lock 
+(defvar identica-mode-font-lock-keywords
+  ;; font-lock-keywords  
   (list
-   ;; font-lock-keywords
-   (list
-    (cons identica-screen-name-regexp 'identica-username-face) 
-    (cons identica-group-name-regexp 'identica-groupname-face)
-    (cons identica-tag-name-regexp 'identica-tagname-face)
-    (cons identica-url-regexp 'identica-uri-face)     
-    (cons identica-heart-regexp 'identica-heart-face)
-    (cons identica-redent-regexp 'identica-redent-face)
+    (cons identica-screen-name-regexp ''identica-username-face) 
+    (cons identica-group-name-regexp ''identica-groupname-face)
+    (cons identica-tag-name-regexp ''identica-tagname-face)
+    (cons identica-url-regexp ''identica-uri-face)     
+    (cons identica-heart-regexp ''identica-heart-face)
+    (cons identica-redent-regexp ''identica-redent-face)
+    (cons 'identica-check-is-user-name ''identica-username-dent-face)
+    (cons 'identica-check-is-source ''identica-source-dent-face)
+    (cons 'identica-check-is-location ''identica-location-dent-face)
+    (cons 'identica-check-is-in-reply ''identica-in-reply-dent-face)
+    (cons 'identica-check-is-protected ''identica-protected-dent-face)
+    (cons 'identica-check-is-created-at ''identica-created-at-dent-face)
+    (cons 'identica-check-is-seconds-ago ''identica-seconds-ago-dent-face)
+    (cons 'identica-check-is-truncated ''identica-truncated-dent-face)
+    ;;(cons 'identica-check-is-favored ''identica-favored-dent-face)
     )
-   
-   ;; Otros...
-   )
   ;;
   "Font lock for `identica-mode'"
   )
