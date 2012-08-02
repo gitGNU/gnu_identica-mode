@@ -457,5 +457,34 @@ STATUS must be a status data, one element taken from the result of `identica-tim
 			   source)
       source)))
 
+;; Functions for getting text with some properties
+
+(defun identica-get-text-value (property &optional position)
+  "Return the text value of the given PROPERTY.
+
+If POSITION is given, search if that property is in that place."
+  (unless position
+    (setq position (point)))
+  (get-text-property position property))
+
+(defun identica-get-text-value-id ()
+  "Return the text value of the property source at current `point'."
+  (identica-get-text-value 'id))
+
+(defun identica-get-text-value-username ()
+  "Return the text value of the property username at current `point'."
+  (identica-get-text-value 'username))
+
+(defun identica-get-text-value-text ()
+  "Return the text value of the property text at current `point'."
+  (identica-get-text-value 'text))
+
+(defun identica-get-text-value-profile-url ()
+  "Return the text value of the property profile-url at current `point'."
+  (identica-get-text-value 'profile-url))
+
+(defun identica-get-text-value-conversation-id ()
+  "Return the text value of the property conversation-id at current `point'."
+  (identica-get-text-value 'conversation-id))
 
 (provide 'identica-interface)

@@ -471,16 +471,24 @@ prompt; \"Down\" counts down from (sn-account-textlimit sn-current-account); \"U
 (add-to-list 'minor-mode-alist '(identica-icon-mode " id-icon"))
 (add-to-list 'minor-mode-alist '(identica-scroll-mode " id-scroll"))
 
+(defvar identica-mode-initialized nil
+  "Has variables been initialized?
+
+This functions is setted to t when `identica-mode-init-variables' is executed 
+or user has setted it!")
+
 (defun identica-mode-init-variables ()
-  ;; (make-variable-buffer-local 'variable)
-  ;; (setq variable nil)
-  (make-variable-buffer-local 'identica-active-mode)
-  (set-default 'identica-active-mode t) 
-  
-  ;; make face properties nonsticky
-  (nconc text-property-default-nonsticky
-	 '((face . t)(mouse-face . t)(uri . t)(source . t)(uri-in-text . t)))
-  (identica-http-init-variables))
+  (unless identica-mode-initialized
+    ;; (make-variable-buffer-local 'variable)
+    ;; (setq variable nil)
+    (make-variable-buffer-local 'identica-active-mode)
+    (set-default 'identica-active-mode t) 
+    
+    ;; make face properties nonsticky
+    (nconc text-property-default-nonsticky
+	   '((face . t)(mouse-face . t)(uri . t)(source . t)(uri-in-text . t)))
+    (identica-http-init-variables)
+    (setq identica-mode-initialized t)))
 
 (provide 'identica-mode)
 ;;(add-hook 'identica-load-hook 'identica-autoload-oauth)
