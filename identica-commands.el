@@ -345,8 +345,11 @@ If nil, will ask for username in minibuffer."
   (interactive)
   (unless from-user
     (setq from-user (read-from-minibuffer "User [Empty for mine]: "
-					  nil nil nil nil nil t)))
-  (identica-get-timeline "statuses" (concat "user_timeline/" from-user)))
+					  nil nil nil nil nil t)))  
+  (identica-get-timeline "statuses" 
+			 (if (string= "" from-user)			     
+			     "user_timeline"
+			   (concat "user_timeline/" from-user))))
 
 (defun identica-conversation-timeline ()
   (interactive)
