@@ -151,6 +151,8 @@ paragraphs. Instead, use visual-line-mode or longlines-mode if
   ;; Carefull with this!!! `kill-buffer-hook' is used globally!!! :-S
   ;; `identica-kill-buffer-function' must be reachable, if not you'll have a great emacs problem!
   ;;(add-hook 'kill-buffer-hook 'identica-kill-buffer-function) 
+  (set (make-local-variable 'buffer-read-only)
+       t)
   (run-mode-hooks 'identica-mode-hook))
 
 

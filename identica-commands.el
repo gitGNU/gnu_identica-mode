@@ -569,9 +569,11 @@ and `identica-process-http-buffer' function."
   (with-current-buffer identica-http-buffer
     (identica-process-http-buffer))
   (with-current-buffer (identica-buffer)
-    (erase-buffer)
-    (identica-render-timeline)
-    (goto-char (point-min))))
+    (let ((inhibit-read-only t))
+      (erase-buffer)
+      (identica-render-timeline)
+      (goto-char (point-min)))))
+  
 
 (defun identica-get-timeline (&optional method-class method parameters)
   "Update the current method-class, method and parameters and then visit that timeline.

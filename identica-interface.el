@@ -489,7 +489,7 @@ If POSITION is given, search if that property is in that place."
 
 (defun identica-get-text-value-uri ()
   "Return the text value of the property conversation-id at current `point'."
-  (identica-get-text-value 'uri)
+  (identica-get-text-value 'uri))
 
 
 (provide 'identica-interface)
