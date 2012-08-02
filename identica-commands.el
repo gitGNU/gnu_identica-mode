@@ -133,8 +133,8 @@ If nil the use default method-class given by `identica-default-method-class'.")
 
 (defun identica-delete-notice ()
   (interactive)
-  (let ((id (get-text-property (point) 'id))
-        (usern (get-text-property (point) 'username)))
+  (let ((id (identica-get-text-value-id))
+        (usern (identica-get-text-value-username)))
     (if (string= usern (sn-account-username sn-current-account))
         (when (y-or-n-p "Delete this notice? ")
           (identica-http-post "statuses/destroy" (number-to-string id))
@@ -350,15 +350,13 @@ If nil, will ask for username in minibuffer."
 
 (defun identica-conversation-timeline ()
   (interactive)
-  (let ((context-id (get-text-property (point) 'conversation-id)))
-    (setq identica-method-class "statusnet")
-    (setq identica-method (concat "conversation/" context-id)))
-  (identica-get-timeline identica-remote-server))
+  (let ((context-id (identica-get-text-value-conversation-id)))
+    (identica-get-timeline "statusnet" (concat "conversation/" context-id))))
 
 (defun identica-remote-user-timeline ()
   (interactive)
-  (let* ((profile (get-text-property (point) 'profile-url))
-         (username (get-text-property (point) 'username))
+  (let* ((profile (identica-get-text-value-profile-url))
+         (username (identica-get-text-value-username))
          (server-url (if (string-match (concat username "/?$") profile)
                          (replace-match "" nil t profile)
                        profile))
@@ -407,7 +405,7 @@ If nil, will ask for username in minibuffer."
 
 (defun identica-follow (&optional remove)
   (interactive)
-  (let ((username (get-text-property (point) 'username))
+  (let ((username (identica-get-text-value-username))
 	(method (if remove "destroy" "create"))
 	(message (if remove "unfollowing" "following")))
     (unless username
@@ -438,27 +436,27 @@ If nil, will ask for username in minibuffer."
 (defun identica-favorite ()
   (interactive)
   (when (y-or-n-p "Do you want to favor this notice? ")
-    (let ((id (get-text-property (point) 'id)))
+    (let ((id (identica-get-text-value-id)))
       (identica-http-post "favorites/create" (number-to-string id))
       (message "Notice saved as favorite"))))
 
 (defun identica-repeat ()
   (interactive)
   (when (y-or-n-p "Do you want to repeat this notice? ")
-    (let ((id (get-text-property (point) 'id)))
+    (let ((id (identica-get-text-value-id)))
       (identica-http-post "statuses/retweet" (number-to-string id))
       (message "Notice repeated"))))
 
 (defun identica-view-user-page ()
   (interactive)
-  (let ((uri (get-text-property (point) 'uri)))
+  (let ((uri (identica-get-text-value-uri)))
     (when uri (browse-url uri))))
 
 (defun identica-redent ()
   (interactive)
-  (let ((username (get-text-property (point) 'username))
-	(id (get-text-property (point) 'id))
-	(text (replace-regexp-in-string "!\\(\\b\\)" "#\\1" (get-text-property (point) 'text))))
+  (let ((username (identica-get-text-value-username))
+	(id (identica-get-text-value-id))
+	(text (replace-regexp-in-string "!\\(\\b\\)" "#\\1" (identica-get-text-value-text))))
     (when username
       (identica-update-status identica-update-status-method
 			      (concat identica-redent-format " @" username ": " text) id))))
@@ -468,9 +466,9 @@ If nil, will ask for username in minibuffer."
 With no argument, populate with the username of the author of the notice.
 With an argument, populate with the usernames of the author and any usernames mentioned in the notice."
   (interactive "P")
-  (let ((username (get-text-property (point) 'username))
-        (notice-text (get-text-property (point) 'text))
-	(id (get-text-property (point) 'id))
+  (let ((username (identica-get-text-value-username))
+        (notice-text (identica-get-text-value-text))
+	(id (identica-get-text-value-id))
         (usernames nil)
 	(usernames-string ""))
     (when all
@@ -501,7 +499,7 @@ With no arg or prefix, toggle the highlighting of the entry at 'point'.
 With arg (or prefix, if interactive), highlight the current entry and
 un-highlight all other entries."
   (interactive "P")
-  (let ((id (get-text-property (point) 'id)))
+  (let ((id (identica-get-text-value-id)))
     (setq identica-highlighted-entries
           (if arg (list id)
             (if (memq id identica-highlighted-entries)
