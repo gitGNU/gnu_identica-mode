@@ -32,3 +32,5 @@
 (defvar identica-update-status-edit-method)
 (defvar identica-update-status-edit-parameters)
 (defvar identica-update-status-edit-reply-to-id)
+
+(provide 'identica-edit-mode)
