@@ -558,16 +558,7 @@ PARAMETERS is alist of URI parameters. ex) ((\"mode\" . \"view\") (\"page\" . \"
   (identica-http-init-variables)
   (or sentinel (setq sentinel 'identica-http-post-default-sentinel))
   (let ((url-request-method "POST")
-	(url (concat "http://"(sn-account-server sn-current-account) "/api/" method-class "/" method ".xml"
-		     (when parameters
-		       (concat "?"
-			       (mapconcat
-				(lambda (param-pair)
-				  (format "%s=%s"
-					  (identica-percent-encode (car param-pair))
-					  (identica-percent-encode (cdr param-pair))))
-				parameters
-				"&")))))
+	(url (identica-make-url server method-class method parameters))
 	(url-package-name "emacs-identicamode")
 	(url-package-version identica-mode-version)
 	;; (if (assoc `media parameters)
@@ -582,8 +573,9 @@ PARAMETERS is alist of URI parameters. ex) ((\"mode\" . \"view\") (\"page\" . \"
     (when (get-buffer-process identica-http-buffer)
       (delete-process identica-http-buffer)
       (kill-buffer identica-http-buffer))
-    (identica-url-retrieve url sentinel method-class method parameters
-			   sentinel-arguments identica-unhex-broken)))
+    (setq identica-http-buffer 
+	  (identica-url-retrieve url sentinel method-class method parameters
+				 sentinel-arguments identica-unhex-broken))))
 
 
 					; ____________________

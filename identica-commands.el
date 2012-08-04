@@ -370,24 +370,6 @@ If nil, will ask for username in minibuffer."
     (setq identica-method (concat "user_timeline/" username))
     (identica-get-timeline server)))
 
-(defun identica-current-timeline (&optional count)
-  "Load newer notices, with an argument load older notices, and with a numeric argument load that number of notices."
-  (interactive "P")
-  (if (> identica-new-dents-count 0)
-      (identica-render-pending-dents)
-    (identica-get-timeline
-     identica-remote-server
-     (if count
-	 (cons `("count" .
-		 ,(int-to-string
-		   (if (listp count) identica-statuses-count count)))
-	       (if (listp count)
-		   `(("max_id" .
-		      ,(int-to-string
-			(- (assoc-default 'id (car (last identica-timeline-data))) 1))))
-		 ()))
-       nil))))
-
 					; --------------------
 
 (defun identica-update-status-interactive ()
@@ -570,6 +552,7 @@ un-highlight all other entries."
   "This is a temporary function made for parameters compatibility with the HTTP \"sentinel\" for `identica-http-get-sentinel'
 and `identica-process-http-buffer' function."
   (with-current-buffer identica-http-buffer
+    (identica-clear-cache)
     (identica-process-http-buffer))
   (with-current-buffer (identica-buffer)
     (let ((inhibit-read-only t))
@@ -619,5 +602,25 @@ If any of them is not nil, then update the identica-current-? value.
     (setq identica-current-method-class (identica-default-method-class)))
   ;; if parameters is nil, nothing to do.
   )
+
+
+(defun identica-current-timeline (&optional count)
+  "Load newer notices, with an argument load older notices, and with a numeric argument load that number of notices."
+  (interactive "P")
+  (if (> identica-new-dents-count 0)
+      (identica-render-pending-dents)
+    (identica-get-timeline
+     identica-remote-server
+     (if count
+	 (cons `("count" .
+		 ,(int-to-string
+		   (if (listp count) identica-statuses-count count)))
+	       (if (listp count)
+		   `(("max_id" .
+		      ,(int-to-string
+			(- (assoc-default 'id (car (last identica-timeline-data))) 1))))
+		 ()))
+       nil))))
+
 
 (provide 'identica-commands)

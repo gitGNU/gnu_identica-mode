@@ -27,7 +27,8 @@
 
 (require 'identica-common-things)
 
-(defvar identica-timeline-data nil)
+(defvar identica-timeline-data nil
+  "This variable will store the timeline information. We can say that is where the cache is.")
 
 (defvar identica-new-dents-count 0
   "Number of new tweets when `identica-new-dents-hook' is run.")
@@ -93,7 +94,9 @@ If non-nil, dents over this amount will bre removed.")
 
 
 (defun identica-process-http-buffer ()
-  "Process de HTTP contents of the `current-buffer' and add everything to the cache "
+  "Process de HTTP contents of the `current-buffer' and add everything to the cache.
+
+The cache will *not* be cleared!"
   (let ((body (identica-get-response-body)))
     (unless (not body)
       (setq identica-new-dents-count
@@ -341,5 +344,9 @@ If STATUS-DATUM is already in DATA-VAR, return nil.  If not, return t."
 			      'identica-compare-statuses))
 	  t)
       nil)))
+
+(defun identica-clear-cache ()
+  "Clear the cache data (in other words, set `identica-timeline-data' to nil)."
+  (setq identica-timeline-data nil))
 
 (provide 'identica-translator)
