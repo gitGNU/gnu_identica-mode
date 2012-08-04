@@ -178,6 +178,14 @@ we adjust point within the right frame."
     (message "Success: Get")))
 
 
+					; --------------------
+					; Updating Status(Sending posts!)
+
+(defun identica-update-status-interactive ()
+  "Let the user write a new status message and send it to the statusnet server,"
+  (interactive)
+  (identica-update-status identica-update-status-method))
+
 (defun identica-update-status-from-edit-buffer-send ()
   (interactive)
   (with-current-buffer "*identica-status-update-edit*"
@@ -188,9 +196,7 @@ we adjust point within the right frame."
           (message (format "Beyond %s chars.  Remove %d chars."
 			   (sn-account-textlimit sn-current-account)
 			   (- status-len (sn-account-textlimit sn-current-account))))
-        (if (identica-update-status-if-not-blank identica-update-status-edit-method-class
-						 identica-update-status-edit-method status
-						 identica-update-status-edit-parameters
+        (if (identica-update-status-if-not-blank identica-update-status-edit-parameters
 						 identica-update-status-edit-reply-to-id)
             (progn
               (erase-buffer)
@@ -204,6 +210,76 @@ we adjust point within the right frame."
 (defun identica-update-status-from-edit-buffer (&optional init-str method-class method parameters)
   (interactive)
   (identica-update-status 'edit-buffer init-str method-class method parameters))
+
+(defun identica-update-status (update-input-method &optional init-str reply-to-id method-class method parameters)
+  (when (null init-str) (setq init-str ""))
+  (let ((msgtype "")
+	(status init-str)
+	(not-posted-p t)
+	(user nil)
+	(map minibuffer-local-map)
+	(minibuffer-message-timeout nil))
+    (define-key map (kbd "<f4>") 'identica-shortenurl-replace-at-point)
+    (if (null method-class)
+        (progn (setq msgtype "Status")
+               (setq method-class "statuses")
+               (setq method "update"))
+      (progn (setq msgtype "Direct message")
+             (setq method-class "direct_messages")
+             (setq parameters (read-from-minibuffer "To user: " user nil nil nil nil t))
+             (setq method "new")))
+    (cond ((eq update-input-method 'minibuffer)
+	   (identica-update-statis-edit-in-minibuffer)
+          ((eq update-input-method 'edit-buffer)
+           (identica-update-status-edit-in-edit-buffer init-str msgtype method-class method parameters reply-to-id))
+          (t (error "Unknown update-input-method in identica-update-status: %S" update-input-method))))))
+
+(defun identica-update-status-edit-in-minibuffer ()
+  (add-hook 'minibuffer-setup-hook 'identica-setup-minibuffer t)
+  (add-hook 'minibuffer-exit-hook 'identica-finish-minibuffer t)
+  (unwind-protect
+      (while not-posted-p
+	(setq status (read-from-minibuffer (concat msgtype ": ") status nil nil nil nil t))
+	(while (< (+ (sn-account-textlimit sn-current-account) 1) (length status))
+	  (setq status (read-from-minibuffer (format (concat msgtype "(%d): ")
+						     (- (sn-account-textlimit sn-current-account) (length status)))
+					     status nil nil nil nil t)))
+	(setq not-posted-p
+	      (not (identica-update-status-if-not-blank method-class method status parameters reply-to-id))))
+    (remove-hook 'minibuffer-setup-hook 'identica-setup-minibuffer)
+    (remove-hook 'minibuffer-exit-hook 'identica-finish-minibuffer)))
+
+(defun identica-update-status-edit-in-edit-buffer (init-str msgtype method-class method parameters &optional reply-to-id)
+  (let ((buf (get-buffer-create "*identica-status-update-edit*")))
+    (pop-to-buffer buf)
+    (with-current-buffer buf
+      (when (not (equal major-mode 'identica-update-status-edit-mode))
+	(progn
+	  (identica-update-status-edit-mode)
+	  (when identica-soft-wrap-status
+	    (when (fboundp 'visual-line-mode)
+	      (visual-line-mode t)))
+	  (make-local-variable 'identica-update-status-edit-method-class)
+	  (make-local-variable 'identica-update-status-edit-method)
+	  (make-local-variable 'identica-update-status-edit-parameters)
+	  (make-local-variable 'identica-update-status-edit-reply-to-id)
+	  (if (> (length parameters) 0)
+	      (setq mode-line-format
+		    (cons (format "%s(%s) (%%i/%s) " msgtype parameters
+				  (sn-account-textlimit sn-current-account))
+			  mode-line-format))
+	    t (setq mode-line-format
+		    (cons (format "%s (%%i/%s) " msgtype (sn-account-textlimit sn-current-account))
+			  mode-line-format)))))
+      (setq identica-update-status-edit-method-class method-class)
+      (setq identica-update-status-edit-method method)
+      (setq identica-update-status-edit-parameters parameters)
+      (setq identica-update-status-edit-reply-to-id reply-to-id)
+      (message identica-update-status-edit-method-class)
+      (insert init-str)
+      (message "Type C-c C-c to post status update (C-c C-k to cancel)."))))
+
+					; --------------------
 
 (defun identica-update-status-from-edit-buffer-cancel ()
   (interactive)
@@ -224,6 +300,9 @@ we adjust point within the right frame."
 (defun identica-update-status-with-media (attachment &optional init-str method-class method parameters reply-to-id)
   (interactive "f")
   (identica-update-status 'minibuffer nil reply-to-id nil nil `((media . ,(insert-file-contents-literally attachment)))))
+
+					; --------------------
+
 
 (defun identica-shortenurl-replace-at-point ()
   "Replace the url at point with a tiny version."
@@ -371,10 +450,6 @@ If nil, will ask for username in minibuffer."
     (identica-get-timeline server)))
 
 					; --------------------
-
-(defun identica-update-status-interactive ()
-  (interactive)
-  (identica-update-status identica-update-status-method))
 
 (defun identica-direct-message-interactive ()
   (interactive)

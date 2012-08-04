@@ -85,6 +85,7 @@ themself the function `identica-http-init-variables'.")
   :type 'integer
   :group 'identica-mode)
 
+
 (defcustom statusnet-server-textlimit 140
   "Number of characters allowed in a status."
   :type 'integer
@@ -634,6 +635,46 @@ You have to use this functions first if you want to use any identica-http's func
     (setq identica-http-initialized t)
     )
   )
+
+(defun identica-update-status-if-not-blank (status &optional reply-to-id)
+  "Send your new STATUS text to identica(or statusnet) server. 
+
+If REPLY-TO-ID is not nil then use that id as a \"reply\" information.
+
+No media is passed, this functions is supposed to send only text."
+  (if (string-match "^\\s-*\\(?:@[-_a-z0-9]+\\)?\\s-*$" status)
+      nil
+    (identica-http-post "statuses" "update"
+			`(("status" . ,status)
+			  ("source" . ,identica-source)
+			  ,@(if reply-to-id
+				`(("in_reply_to_status_id" . ,(number-to-string reply-to-id))))))))
+  
+
+;; This is the original. 
+(defun identica-update-status-if-not-blank-orig (method-class method status &optional parameters reply-to-id)
+  "If STATUS is not a blank string then send it for updating post."
+  (if (string-match "^\\s-*\\(?:@[-_a-z0-9]+\\)?\\s-*$" status)
+      nil
+    (if (equal method-class "statuses")
+	(identica-http-post method-class method
+			    `(("status" . ,status)
+			      ("source" . ,identica-source)
+			      ,@(if (assoc `media parameters)
+				    `(("media" . ,(cdr (assoc `media parameters))))
+				  nil)
+			      ,@(if reply-to-id
+				    `(("in_reply_to_status_id"
+				       . ,(number-to-string reply-to-id))))))
+      (identica-http-post method-class method
+			  `(("text" . ,status)
+			    ("user" . ,parameters) ;must change this to parse parameters as list
+			    ("source" . ,identica-source))))
+
+    t))
+
+
+  
 
 ;;
 ;; If you want to call this when loading identica-http, uncomment the following line:

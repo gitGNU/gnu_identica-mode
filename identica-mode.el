@@ -322,57 +322,6 @@ we are interested in."
 	(identica-stop)
       (funcall func))))
 
-(defun identica-update-status-if-not-blank (method-class method status &optional parameters reply-to-id)
-  (if (string-match "^\\s-*\\(?:@[-_a-z0-9]+\\)?\\s-*$" status)
-      nil
-    (if (equal method-class "statuses")
-	(identica-http-post method-class method
-			    `(("status" . ,status)
-			      ("source" . ,identica-source)
-			      ,@(if (assoc `media parameters)
-				    `(("media" . ,(cdr (assoc `media parameters))))
-				  nil)
-			      ,@(if reply-to-id
-				    `(("in_reply_to_status_id"
-				       . ,(number-to-string reply-to-id))))))
-      (identica-http-post method-class method
-			  `(("text" . ,status)
-			    ("user" . ,parameters) ;must change this to parse parameters as list
-			    ("source" . ,identica-source))))
-
-    t))
-
-
-(defun identica-update-status-edit-in-edit-buffer (init-str msgtype method-class method parameters &optional reply-to-id)
-  (let ((buf (get-buffer-create "*identica-status-update-edit*")))
-    (pop-to-buffer buf)
-    (with-current-buffer buf
-      (when (not (equal major-mode 'identica-update-status-edit-mode))
-	(progn
-	  (identica-update-status-edit-mode)
-	  (when identica-soft-wrap-status
-	    (when (fboundp 'visual-line-mode)
-	      (visual-line-mode t)))
-	  (make-local-variable 'identica-update-status-edit-method-class)
-	  (make-local-variable 'identica-update-status-edit-method)
-	  (make-local-variable 'identica-update-status-edit-parameters)
-	  (make-local-variable 'identica-update-status-edit-reply-to-id)
-	  (if (> (length parameters) 0)
-	      (setq mode-line-format
-		    (cons (format "%s(%s) (%%i/%s) " msgtype parameters
-				  (sn-account-textlimit sn-current-account))
-			  mode-line-format))
-	    t (setq mode-line-format
-		    (cons (format "%s (%%i/%s) " msgtype (sn-account-textlimit sn-current-account))
-			  mode-line-format)))))
-      (setq identica-update-status-edit-method-class method-class)
-      (setq identica-update-status-edit-method method)
-      (setq identica-update-status-edit-parameters parameters)
-      (setq identica-update-status-edit-reply-to-id reply-to-id)
-      (message identica-update-status-edit-method-class)
-      (insert init-str)
-      (message "Type C-c C-c to post status update (C-c C-k to cancel)."))))
-
 (defcustom identica-minibuffer-length-prompt-style nil
   "The preferred style of counting characters in the minibuffer.
 prompt; \"Down\" counts down from (sn-account-textlimit sn-current-account); \"Up\" counts
@@ -398,41 +347,6 @@ prompt; \"Down\" counts down from (sn-account-textlimit sn-current-account); \"U
 
 (defun identica-finish-minibuffer ()
   (remove-hook 'post-command-hook 'identica-show-minibuffer-length t))
-
-(defun identica-update-status (update-input-method &optional init-str reply-to-id method-class method parameters)
-  (when (null init-str) (setq init-str ""))
-  (let ((msgtype "")
-	(status init-str)
-	(not-posted-p t)
-	(user nil)
-	(map minibuffer-local-map)
-	(minibuffer-message-timeout nil))
-    (define-key map (kbd "<f4>") 'identica-shortenurl-replace-at-point)
-    (if (null method-class)
-        (progn (setq msgtype "Status")
-               (setq method-class "statuses")
-               (setq method "update"))
-      (progn (setq msgtype "Direct message")
-             (setq method-class "direct_messages")
-             (setq parameters (read-from-minibuffer "To user: " user nil nil nil nil t))
-             (setq method "new")))
-    (cond ((eq update-input-method 'minibuffer)
-	   (add-hook 'minibuffer-setup-hook 'identica-setup-minibuffer t)
-	   (add-hook 'minibuffer-exit-hook 'identica-finish-minibuffer t)
-	   (unwind-protect
-	       (while not-posted-p
-		 (setq status (read-from-minibuffer (concat msgtype ": ") status nil nil nil nil t))
-		 (while (< (+ (sn-account-textlimit sn-current-account) 1) (length status))
-		   (setq status (read-from-minibuffer (format (concat msgtype "(%d): ")
-							      (- (sn-account-textlimit sn-current-account) (length status)))
-						      status nil nil nil nil t)))
-		 (setq not-posted-p
-		       (not (identica-update-status-if-not-blank method-class method status parameters reply-to-id))))
-	     (remove-hook 'minibuffer-setup-hook 'identica-setup-minibuffer)
-	     (remove-hook 'minibuffer-exit-hook 'identica-finish-minibuffer)))
-          ((eq update-input-method 'edit-buffer)
-           (identica-update-status-edit-in-edit-buffer init-str msgtype method-class method parameters reply-to-id))
-          (t (error "Unknown update-input-method in identica-update-status: %S" update-input-method)))))
 
 (defun identica-get-icons ()
   "Retrieve icons if icon-mode is active."
