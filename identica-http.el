@@ -344,6 +344,14 @@ Shamelessly stolen from yammer.el"
 	(kill-this-buffer))))
   (sn-oauth-access-token (sn-account-oauth-data sn-current-account)))
 
+(defun identica-url-reserved-p (ch)
+  (or (and (<= ?A ch) (<= ch ?z))
+      (and (<= ?0 ch) (<= ch ?9))
+      (eq ?. ch)
+      (eq ?- ch)
+      (eq ?_ ch)
+      (eq ?~ ch)))
+
 (defun identica-percent-encode (str &optional coding-system)
   "Make a symbol translation for URLs parameters. 
 
@@ -379,12 +387,12 @@ This will return http://server/api/methods.xml?id=19923&name=juan%20bonachón.
 
 A simbol translation is done for the PARAMETERS using `identica-percent-encode'."
   
-  (format "http://%s/api/%s%s.xml"
+  (format "http://%s/api/%s%s.xml%s"
 	  server
 	  (when (not (string-equal method-class "none"))
 	    (concat method-class "/" ))
 	  method
-	  (when parameters
+	  (if parameters
 	    (concat "?"
 		    (mapconcat
 		     (lambda (param-pair)
@@ -392,7 +400,8 @@ A simbol translation is done for the PARAMETERS using `identica-percent-encode'.
 			       (identica-percent-encode (car param-pair))
 			       (identica-percent-encode (cdr param-pair)))) ;; (1) Becareful here! cdr returns a parentezised string like "(hi)"!
 		     parameters
-		     "&")))))
+		     "&"))
+	    "")))
 
 					; ____________________
 					; Error Checking 
@@ -556,9 +565,10 @@ METHOD-CLASS must be one of Identica API method classes(statuses, users or direc
 METHOD must be one of Identica API method which belongs to METHOD-CLASS.
 PARAMETERS is alist of URI parameters. ex) ((\"mode\" . \"view\") (\"page\" . \"6\")) => <URI>?mode=view&page=6"
   (identica-http-init-variables)
-  (or sentinel (setq sentinel 'identica-http-post-default-sentinel))
+  (or sentinel (setq sentinel 'identica-http-post-nothing-sentinel))
   (let ((url-request-method "POST")
-	(url (identica-make-url server method-class method parameters))
+	(url (identica-make-url (sn-account-server sn-current-account)
+				method-class method parameters))
 	(url-package-name "emacs-identicamode")
 	(url-package-version identica-mode-version)
 	;; (if (assoc `media parameters)

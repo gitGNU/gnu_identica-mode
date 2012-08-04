@@ -316,13 +316,6 @@ we are interested in."
   (unless (get-buffer-process (current-buffer))
     (kill-buffer (current-buffer))))
 
-(defun identica-url-reserved-p (ch)
-  (or (and (<= ?A ch) (<= ch ?z))
-      (and (<= ?0 ch) (<= ch ?9))
-      (eq ?. ch)
-      (eq ?- ch)
-      (eq ?_ ch)
-      (eq ?~ ch)))
 (defun identica-timer-action (func)
   (let ((buf (get-buffer identica-buffer)))
     (if (null buf)
