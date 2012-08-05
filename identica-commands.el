@@ -181,27 +181,28 @@ we adjust point within the right frame."
 					; --------------------
 					; Updating Status(Sending posts!)
 
+;; Update status in buffer
 (defun identica-update-status-interactive ()
   "Let the user write a new status message and send it to the statusnet server,"
   (interactive)
-  (identica-update-status identica-update-status-method))
+  (identica-mode-init-variables)
+  (identica-edit-buffer-startup (sn-account-textlimit sn-current-account)))
+  
 
 (defun identica-update-status-from-edit-buffer-send ()
+  "Send the update status from the edit buffer.
+
+Before everything, check if the amount of text is less than the limit."
   (interactive)
-  (with-current-buffer "*identica-status-update-edit*"
-    (longlines-encode-region (point-min) (point-max))
-    (let* ((status (buffer-substring-no-properties (point-min) (point-max)))
-           (status-len (length status)))
-      (if (< (sn-account-textlimit sn-current-account) status-len)
-          (message (format "Beyond %s chars.  Remove %d chars."
-			   (sn-account-textlimit sn-current-account)
-			   (- status-len (sn-account-textlimit sn-current-account))))
-        (if (identica-update-status-if-not-blank identica-update-status-edit-parameters
-						 identica-update-status-edit-reply-to-id)
-            (progn
-              (erase-buffer)
-              (bury-buffer))
-          (message "Update failed!"))))))
+  ;; Check if user wrote less than the character limit
+  (if (not (identica-edit-buffer-check-amount-text))
+      (message (format "Beyond %s chars.  Remove %d chars." 
+		       identica-edit-buffer-text-limit
+		       (- (identica-edit-buffer-amount-text)
+			  identica-edit-buffer-text-limit)))
+    (if (identica-update-status-if-not-blank (identica-edit-buffer-get-text)) ;; enough characters! send it!
+	(identica-edit-buffer-quit)
+      (message "Update failed!"))))
 
 (defun identica-update-status-from-minibuffer (&optional init-str method-class method parameters reply-to-id)
   (interactive)

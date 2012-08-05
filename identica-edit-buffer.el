@@ -78,4 +78,41 @@ REPLY-TO-ID tells to what status id the user is answering. Useful for conversati
 		 identica-edit-buffer-text-limit)
 	 mode-line-format)))
 
+(defun identica-edit-buffer-get-text ()
+  "Return the current text writed by the user.
+
+If there is no edit buffer return nil."
+  (if (get-buffer identica-edit-buffer-name)
+      (with-current-buffer identica-edit-buffer-name
+	(longlines-encode-region (point-min) (point-max))
+	(buffer-substring-no-properties (point-min) (point-max)))
+    nil))
+
+(defun identica-edit-buffer-check-amount-text ()
+  "Return nil if user has written more than the character limit.
+Return t if user has written less than the character limit
+
+The limit is given by the variable `identica-edit-buffer-text-limit'.
+
+If edit-buffer doesn't exists, then return 'error symbol."  
+  (let ((text (identica-edit-buffer-get-text)))
+    (if text
+	(length (identica-edit-buffer-get-text))
+      'error)))
+
+(defun identica-edit-buffer-amount-text ()
+  "Return the amount of character the user has used.
+
+If edit-buffer doesn't exists, then return nil."  
+  (let ((text (identica-edit-buffer-get-text)))
+    (if text
+	(length (identica-edit-buffer-get-text))
+      nil)))
+
+(defun identica-edit-buffer-quit ()
+  "Bury the buffer and clean everything. Make everything ready for the next update!"
+  (with-current-buffer identica-edit-buffer-name
+    (erase-buffer)
+    (bury-buffer)))
+
 (provide 'identica-edit-buffer)
