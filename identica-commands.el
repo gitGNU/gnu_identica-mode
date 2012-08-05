@@ -530,7 +530,8 @@ With an argument, populate with the usernames of the author and any usernames me
     (setq usernames (delete (concat "@" (sn-account-username sn-current-account) " ") usernames))
     (setq usernames-string (apply 'concat usernames))
     (identica-edit-buffer-startup (sn-account-textlimit sn-current-account)
-				  nil nil id)))
+				  (format "@%s" username)
+				  nil id)))
 
 (defun identica-reply-to-all ()
   (interactive)
