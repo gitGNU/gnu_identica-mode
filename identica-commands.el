@@ -272,8 +272,7 @@ Before everything, check if the amount of text is less than the limit."
   (when (or (not identica-update-status-edit-confirm-cancellation)
 	    (yes-or-no-p
 	     "Really cancel editing this status message (any changes will be lost)?"))
-    (erase-buffer)
-    (bury-buffer)))
+    (identica-edit-buffer-quit)))
 
 (defun identica-update-status-from-region (beg end)
   (interactive "r")
