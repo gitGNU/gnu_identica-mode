@@ -200,7 +200,8 @@ Before everything, check if the amount of text is less than the limit."
 		       identica-edit-buffer-text-limit
 		       (- (identica-edit-buffer-amount-text)
 			  identica-edit-buffer-text-limit)))
-    (if (identica-update-status-if-not-blank (identica-edit-buffer-get-text)) ;; enough characters! send it!
+    (if (identica-update-status-if-not-blank (identica-edit-buffer-get-text)
+					     (identica-edit-buffer-is-a-reply)) ;; enough characters! send it!
 	(identica-edit-buffer-quit)
       (message "Update failed!"))))
 
@@ -528,7 +529,8 @@ With an argument, populate with the usernames of the author and any usernames me
     (setq usernames (delete-dups usernames))
     (setq usernames (delete (concat "@" (sn-account-username sn-current-account) " ") usernames))
     (setq usernames-string (apply 'concat usernames))
-    (identica-update-status identica-update-status-method usernames-string id)))
+    (identica-edit-buffer-startup (sn-account-textlimit sn-current-account)
+				  nil nil id)))
 
 (defun identica-reply-to-all ()
   (interactive)

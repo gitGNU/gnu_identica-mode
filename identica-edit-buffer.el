@@ -41,6 +41,13 @@ for differents type of statusnet servers.
 
 Remember that differents statusnet servers can have differents text-limits values.")
 
+(defvar identica-edit-buffer-reply-id nil
+  "If edit-buffer text is a reply, then this variable will store the message id.
+
+You can use `identica-edit-buffer-is-a-reply' to retrieve the message-id.")
+
+
+
 (defun identica-edit-buffer-startup (text-limit &optional init-str is-direct-message reply-to-id)
   "Initialize and show the edit-buffer.
 
@@ -50,9 +57,14 @@ INIT-STR is the initial string, if nil use the empty string.
 
 IS-DIRECT-MESSAGE if t then this status is a direct-message type.
 
-REPLY-TO-ID tells to what status id the user is answering. Useful for conversations!"
+REPLY-TO-ID tells to what status id the user is answering. Useful for conversations!
+If not present or nil, then the buffer text doesn't represent a reply."
   (or init-str (setq init-str ""))
   (setq identica-edit-buffer-text-limit text-limit)
+  (setq identica-edit-buffer-reply-id reply-to-id)
+  (if is-direct-message 
+      (setq identica-edit-buffer-type 'direct-message)
+    (setq identica-edit-buffer-type 'update-status))
   (let ((buf (get-buffer-create identica-edit-buffer-name)))    
     (pop-to-buffer buf)
     (with-current-buffer buf
@@ -69,13 +81,17 @@ REPLY-TO-ID tells to what status id the user is answering. Useful for conversati
   "Acording to `identica-edit-buffer-type' set the line format properly"
   (setq mode-line-format 
 	(cons 
-	 (format "%s (%%i/%s) " 
-		 (cond ((eq identica-edit-buffer-type 'update-status)		
-			"identica update status")
-		       ((eq identica-edit-buffer-type 'direct-message)
-			"identica direct message")
-		       )
-		 identica-edit-buffer-text-limit)
+	 (concat 
+	  (cond ((eq identica-edit-buffer-type 'update-status)		
+		 "update status")
+		((eq identica-edit-buffer-type 'direct-message)
+		 "direct message"))  
+	  (format "(%%i/%s)" 
+		  identica-edit-buffer-text-limit)
+	  (if identica-edit-buffer-reply-id
+	      (format "Reply: %s" identica-edit-buffer-reply-id)
+	    "")
+	  )
 	 mode-line-format)))
 
 (defun identica-edit-buffer-get-text ()
@@ -109,9 +125,21 @@ If edit-buffer doesn't exists, then return nil."
 	(length (identica-edit-buffer-get-text))
       nil)))
 
+(defun identica-edit-buffer-is-a-reply ()
+  "Return the status id if the text writen is a reply, nil if it is not.
+
+Return 'error symbol in case the buffer doesn't exists."
+  (if (get-buffer identica-edit-buffer-name)
+      identica-edit-buffer-reply-id
+    'error))
+
+
 (defun identica-edit-buffer-quit ()
   "Bury the buffer and clean everything. Make everything ready for the next update!"
   (with-current-buffer identica-edit-buffer-name
+    (setq identica-edit-buffer-type nil)
+    (setq identica-edit-buffer-reply-id nil)
+
     (erase-buffer)
     (bury-buffer)))
 
