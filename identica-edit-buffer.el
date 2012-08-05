@@ -69,7 +69,7 @@ If not present or nil, then the buffer text doesn't represent a reply."
     (pop-to-buffer buf)
     (with-current-buffer buf
       (fit-window-to-buffer (selected-window) 10 10)
-      (identica-update-status-edit-mode)
+      (identica-edit-mode)
       (when identica-soft-wrap-status
 	(when (fboundp 'visual-line-mode)
 	  (visual-line-mode t)))
@@ -141,6 +141,7 @@ Return 'error symbol in case the buffer doesn't exists."
     (setq identica-edit-buffer-reply-id nil)
 
     (erase-buffer)
-    (bury-buffer)))
+    (bury-buffer))
+  (delete-window))
 
 (provide 'identica-edit-buffer)

@@ -44,6 +44,7 @@
 (require 'identica-http)
 (require 'identica-major-mode)
 (require 'identica-interface)
+(require 'identica-edit-buffer)
 
 (defcustom identica-default-timeline "friends_timeline"
   "Default timeline to retrieve."
