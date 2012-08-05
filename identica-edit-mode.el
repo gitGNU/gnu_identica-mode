@@ -18,6 +18,13 @@
     ;; Miércoles 25 De Julio Del 2012    
 
 
+(require 'identica-common-things)
+
+(defgroup identica-edit-mode-faces nil
+  "Identica edit-buffer mode Faces"
+  :tag "Identica Edit Mode Faces"
+  :group 'identica-mode
+  :group 'faces)
 
 (defvar identica-update-status-edit-map
   (let ((map (make-sparse-keymap)))
@@ -25,8 +32,73 @@
     (define-key map (kbd "C-c C-k") 'identica-update-status-from-edit-buffer-cancel)
     map))
 
-(define-derived-mode identica-update-status-edit-mode text-mode "Identica Status Edit"
-  (use-local-map identica-update-status-edit-map))
+
+(defface identica-edit-username-face
+  '(
+    (t :underline t
+       :foreground "OliveDrab3")    
+    )
+  "Face for usernames in edit-buffer"
+  :group 'identica-edit-mode-faces)
+
+(defface identica-edit-groupname-face
+  '(
+    (t :underline t
+       :foreground "aquamarine")    
+    )
+  "Face for groupnames in edit-buffer"
+  :group 'identica-edit-mode-faces)
+
+(defface identica-edit-tagname-face
+  '(
+    (t :underline t
+       :foreground "light coral")    
+    )
+  "Face for tagnames in edit-buffer"
+  :group 'identica-edit-mode-faces)
+
+(defface identica-edit-uri-face
+  '(
+    (t :inherit 'link)    
+    )
+  "Face for URIs links in edit-buffer"
+  :group 'identica-edit-mode-faces)
+
+(defface identica-edit-heart-face
+  '(
+    (t :foreground "firebrick1"
+       :height 2.0)  
+    )
+  "Face for heart symbols in edit-buffer"
+  :group 'identica-edit-mode-faces)
+
+(defface identica-edit-redent-face
+    '(
+    (t :foreground "firebrick1" 
+       :height 2.0)  
+    )
+    "Face for redents symbols in edit-buffer"
+  :group 'identica-edit-mode-faces)
+
+;;
+(defvar identica-edit-mode-font-lock-keywords
+  ;; font-lock-keywords  
+  (list
+   (cons identica-screen-name-regexp ''identica-edit-username-face) 
+   (cons identica-group-name-regexp ''identica-edit-groupname-face)
+   (cons identica-tag-name-regexp ''identica-edit-tagname-face)
+   (cons identica-url-regexp ''identica-edit-uri-face)     
+   (cons identica-heart-regexp ''identica-edit-heart-face)
+   (cons identica-redent-regexp ''identica-edit-redent-face)
+   )
+  ;;
+  "Font lock for `identica-edit-mode'"
+  )
+
+(define-derived-mode identica-edit-mode nil "Identica Status Edit"
+  (use-local-map identica-update-status-edit-map)
+  (set (make-local-variable 'font-lock-defaults)
+       '(identica-edit-mode-font-lock-keywords)))
 
 (defvar identica-update-status-edit-method-class)
 (defvar identica-update-status-edit-method)
