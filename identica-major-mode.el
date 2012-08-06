@@ -29,7 +29,8 @@
 
 (defvar identica-mode-map (make-sparse-keymap "Identi.ca"))
 (defvar menu-bar-identica-mode-menu nil)
-(defvar identica-mode-string "")
+(defvar identica-mode-string ""
+  "This is the actual `mode-name' for this major-mode.")
 (defvar identica-icon-mode nil "You MUST NOT CHANGE this variable directory.  You should change through function'identica-icon-mode'.")
 (make-variable-buffer-local 'identica-icon-mode)
 
@@ -587,6 +588,8 @@ static char * statusnet_off_xpm[] = {
 (defun identica-set-mode-string (loading identica-method server &optional buffer)
   "Change the `mode-name' so can display the current status of identica-mode.
 
+Save the new `mode-name' in `identica-mode-string'.
+
 It is needed the IDENTICA-METHOD and the SERVER, both are strings.
 LOADING is a boolean that set the apropiate string that show to the user that identica-mode is working on something.
 If BUFFER is not present or nil, set the `mode-name' in the `identica-buffer'."
@@ -594,13 +597,13 @@ If BUFFER is not present or nil, set the `mode-name' in the `identica-buffer'."
     (with-current-buffer buff
       (let ((timeline-url
 	     (concat server "/" identica-method)))
-	(setq mode-name
+	(setq identica-mode-string
 	      (if loading (concat
 			   (if (stringp loading) loading "loading")
 			   " " timeline-url "...")
-		timeline-url))
+		timeline-url)))
 	;;	(debug-print mode-name)
-	))))
+      (setq mode-name identica-mode-string))))
 
 
 (provide 'identica-major-mode)

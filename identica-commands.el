@@ -618,6 +618,9 @@ and `identica-process-http-buffer' function."
     (identica-clear-cache)
     (identica-process-http-buffer))
   (with-current-buffer (identica-buffer)
+    ;; set the status mode    
+    (identica-set-mode-string nil identica-current-method (sn-account-server sn-current-account))
+
     (let ((inhibit-read-only t))
       (erase-buffer)
       (identica-render-timeline)
@@ -648,6 +651,8 @@ If any of them is not nil, then update the identica-current-? value.
       (setq identica-current-parameters parameters)
     (setq parameters identica-current-parameters))
 
+  (identica-set-mode-string t method (sn-account-server sn-current-account))
+  
   (setq identica-http-get-sentinel 'identica-process-http-buffer-1)
   (identica-http-get method-class method parameters)
   (switch-to-buffer (identica-buffer))
