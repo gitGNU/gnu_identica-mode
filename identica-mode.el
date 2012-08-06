@@ -394,7 +394,10 @@ or user has setted it!")
     ;; make face properties nonsticky
     (nconc text-property-default-nonsticky
 	   '((face . t)(mouse-face . t)(uri . t)(source . t)(uri-in-text . t)))
+
     (identica-http-init-variables)
+    (identica-interface-init-variables (sn-account-username sn-current-account))
+
     (setq identica-mode-initialized t)))
 
 (provide 'identica-mode)

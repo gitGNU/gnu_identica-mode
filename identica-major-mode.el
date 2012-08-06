@@ -268,6 +268,13 @@ paragraphs. Instead, use visual-line-mode or longlines-mode if
   :group 'identica-mode-faces)
 
 
+(defface identica-is-a-reply-dent-face 
+  '((t :background "midnight blue"
+       ))
+  "Face for the username part in a dent message."
+  :group 'identica-mode-faces)
+
+
 ;; taken from diaspora.el
 (defun identica-check-is-property (limit property)
   "Return t if the symbol property given by PROPERTY is in any of the text's properties between current `point' up to LIMIT.
@@ -329,7 +336,11 @@ Create a new function like `identica-check-is-message-separator' so you can use 
   "Return t if the text from the current point up to the limit has the property user-name setted to t."
   (identica-check-is-property limit 'favored))
 
+(defun identica-check-is-is-a-reply (limit)  
+  "Return t if the text from the current point up to the limit has the property is-a-reply setted to t.
 
+This property tells that the current status is a reply to the user."
+  (identica-check-is-property limit 'is-a-reply))
 					; ____________________
 					; Font-lock 
 ;;
@@ -349,7 +360,8 @@ Create a new function like `identica-check-is-message-separator' so you can use 
     (cons 'identica-check-is-protected ''identica-protected-dent-face)
     (cons 'identica-check-is-created-at ''identica-created-at-dent-face)
     (cons 'identica-check-is-seconds-ago ''identica-seconds-ago-dent-face)
-    (cons 'identica-check-is-truncated ''identica-truncated-dent-face)
+    (cons 'identica-check-is-truncated ''identica-truncated-dent-face) 
+    (list 'identica-check-is-is-a-reply 0 ''identica-is-a-reply-dent-face 'append)
     ;;(cons 'identica-check-is-favored ''identica-favored-dent-face)
     )
   ;;

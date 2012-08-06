@@ -59,6 +59,17 @@
   :group 'identica-mode)
 
 
+(defvar identica-interface-username nil
+  "This is the username of the current statusnet user. 
+
+Usable for adding needed properties to status that are replies.")
+
+(defun identica-interface-init-variables (username)
+  "Initialize identica-interface module.
+
+USERNAME is the user screen name of the actual session."
+  (setq identica-interface-username username))
+
 (defvar identica-buffer "*identica*")
 
 (defun identica-buffer (&optional method)
@@ -197,6 +208,7 @@ A filter is applied as a blacklist of dents."
 					 id, (attr 'id)
 					 text, (attr 'text)
 					 profile-url, (attr 'user-profile-url)
+					 in-reply-to-screen-name, (attr 'in-reply-to-screen-name)
 				       conversation-id, (attr 'conversation-id))
 			     formatted-status)
 	formatted-status))))
@@ -438,12 +450,25 @@ STATUS must be a status data, one element taken from the result of `identica-tim
       (setq regex-index (match-end 0))))
   text)
 
+(defun identica-find-and-add-reply-properties (text)
+  "If text is a status reply to the current user, then add the property 'is-a-reply
+
+To know who is the current user, the variable `identica-interface-username' must be setted, if not this function will do nothing."
+  (when identica-interface-username
+    (if (string= (get-text-property 1 'in-reply-to-screen-name text)
+		 identica-interface-username) ;; the username of the status is the same as the current one.
+	(add-text-properties 1 (length text) '(is-a-reply t) text)
+      text))
+  text)
+    
+
 (defun identica-find-and-add-all-properties (text)
   "Finds all important text(like screen-names and tag-names), then add format and link properties to them."  
   (setq text (identica-find-and-add-screen-name-properties text))
   (setq text (identica-find-and-add-group-name-properties text))
   (setq text (identica-find-and-add-tag-name-properties text))
   (setq text (identica-find-and-add-http-url-properties text))
+  (setq text (identica-find-and-add-reply-properties text))
   text)
 
 (defun identica-make-source-pretty (source)
