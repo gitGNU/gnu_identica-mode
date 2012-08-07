@@ -66,7 +66,16 @@ The icons to retrieve must be stored in `identica-icon-image-stack'."
 	 proc
 	 (lambda (proc stat)
 	   (clear-image-cache)
+	   (setq identica-icon-image-stack nil)
+	   (when identica-icon-finish-sentinel	     
+	     (apply identica-icon-finish-sentinel 
+		    identica-icon-finish-sentinel-parameters))
 	   )))))
+
+(defvar identica-icon-finish-sentinel nil
+  "If setted then use this function when `identica-icon-get-icons' function finish download every icon image.")
+(defvar identica-icon-finish-sentinel-parameters nil
+  "This is the parameters that the function `identica-icon-finish-sentinel' will be called.")
 
 (defun identica-icon-insert-image (profile-image-url)
   "Insert the image given by the URL PROFILE-IMAGE-URL (if exists in the temporal dir) in the `current-buffer'.
@@ -84,16 +93,19 @@ If the image has been downloaded, then the function will return nil. Otherwise, 
 
 (defun identica-icon-get-image-string (profile-image-url)
   "Return a string with the image, this image has been inserted as a property."
-    (let ((filename (identica-icon-get-tmp-filename profile-image-url)))
-    (when filename
-      (propertize " " 'display (cons 'image 
-				     (list :type 'png :file filename))))))
+  (let ((filename (identica-icon-get-tmp-filename profile-image-url t)))
+    (propertize " " 'display (cons 'image 
+				   (list :type (identica-icon-image-type filename)
+					 :file filename)))))
+    
 
 
-(defun identica-icon-get-tmp-filename (profile-image-url)
+(defun identica-icon-get-tmp-filename (profile-image-url &optional no-check)
   "Return only the filename if it exists in the temporary directory given by variable `identica-icon-tmp-images-dir'.
 
-If the file doesn't exists, the return nil."
+If the file doesn't exists, the return nil.
+
+If NO-CHECK if t then, don't check if the temporary filename exists."
   (string-match "/\\([^/?]+\\)\\(?:\\?\\|$\\)" profile-image-url) ;; match the filename from the URL
   (let ((filename (match-string-no-properties 1 profile-image-url))
 	(xfilename (match-string-no-properties 0 profile-image-url)))
@@ -101,6 +113,8 @@ If the file doesn't exists, the return nil."
      ((file-exists-p (concat identica-icon-tmp-images-dir filename))
       (concat identica-icon-tmp-images-dir filename))
      ((file-exists-p (concat identica-icon-tmp-images-dir xfilename))
+      (concat identica-icon-tmp-images-dir xfilename))
+     (no-check
       (concat identica-icon-tmp-images-dir xfilename))
      (t nil))))
 

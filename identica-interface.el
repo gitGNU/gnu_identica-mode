@@ -28,6 +28,7 @@
 
 (require 'identica-translator)
 (require 'identica-common-things)
+(require 'identica-icon-mode)
 
 (defcustom identica-blacklist '()
   "List of regexes used to filter statuses, evaluated after status formatting is applied."
@@ -144,7 +145,19 @@ Initialize the global method with the default, or with METHOD, if present."
 	  identica-blacklist)
     blacklisted))
 
-(defun identica-render-timeline (&optional buffer)
+(defun identica-mark-all-icons-for-download ()
+  "Mark all profile icons for download.
+
+Only will be marked for download those icons that aren't in the temporary directory."
+  (dolist (status identica-timeline-data)
+    (identica-icon-set-for-download (assoc-default 'user-profile-image-url status))))
+
+(defun identica-download-all-icons ()
+  "Find and download all profile image icons."
+  (identica-mark-all-icons-for-download)
+  (identica-icon-get-icons))
+
+(defun identica-render-timeline (&optional buffer clean-first)
   "Render all the timeline getting all the information from `identica-timeline-data'.
 
 BUFFER is the buffer where insert all the information.
@@ -153,10 +166,13 @@ If BUFFER is nil or not present, use the `current-buffer'.
 A filter is applied as a blacklist of dents."
   (or buffer (setq buffer (current-buffer)))
   (with-current-buffer buffer
-    (dolist (status identica-timeline-data)
-      (let ((formated-status (identica-format-status status identica-status-format)))
-	(unless (identica-status-is-in-blacklist formated-status)
-	  (insert (identica-find-and-add-all-properties formated-status)))))))
+    (let ((inhibit-read-only t))
+      (when clean-first 
+	(erase-buffer))
+      (dolist (status identica-timeline-data)
+	(let ((formated-status (identica-format-status status identica-status-format)))
+	  (unless (identica-status-is-in-blacklist formated-status)	  
+	    (insert (identica-find-and-add-all-properties formated-status))))))))
   
 (defun identica-format-status (status format-str)
   "Create a string with information from STATUS formatted acording to FORMAT-STR. 
@@ -211,7 +227,7 @@ STATUS must be a status data, one element taken from the result of `identica-tim
       ((?S)                         ; %S - name
        (identica-format-user-name (attr 'user-name)))
       ((?i)                         ; %i - profile_image
-       ;;(identica-profile-image (attr 'user-profile-image-url)) ;; TODO:
+       (identica-format-profile-image (attr 'user-profile-image-url)) ;; TODO:
        )
       ((?d)                         ; %d - description
        (identica-format-user-description (attr 'user-description)))
@@ -259,6 +275,10 @@ STATUS must be a status data, one element taken from the result of `identica-tim
 ;; 
 ;; Take as an example the created-at date: it has the property "'created-at t". This is usefull to know where each dent part starts and ends.
 
+(defun identica-format-profile-image (url)
+  (propertize (identica-icon-get-image-string url)
+	      'profile-image t))
+
 (defun identica-format-user-name (name)
   "How the user-name will be formated?"
   (propertize name 'user-name t)
@@ -284,6 +304,7 @@ STATUS must be a status data, one element taken from the result of `identica-tim
 
 (defun identica-format-user-profile-url (url)
   "How user-profile-url will formated?"
+  (identica-icon-set-for-download url)
   (propertize (cadr (split-string url "https*://")) 
 	      '('user-profile-url t)))
 

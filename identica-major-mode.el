@@ -275,6 +275,12 @@ paragraphs. Instead, use visual-line-mode or longlines-mode if
   "Face for the username part in a dent message."
   :group 'identica-mode-faces)
 
+(defface identica-profile-image-dent-face 
+  '((t :background "white"
+       ))
+  "Face for the username part in a dent message."
+  :group 'identica-mode-faces)
+
 
 ;; taken from diaspora.el
 (defun identica-check-is-property (limit property)
@@ -342,6 +348,10 @@ Create a new function like `identica-check-is-message-separator' so you can use 
 
 This property tells that the current status is a reply to the user."
   (identica-check-is-property limit 'is-a-reply))
+
+(defun identica-check-is-profile-image (limit)  
+  "Return t if the text from the current point up to the limit has the property profile-image setted to t."
+  (identica-check-is-property limit 'profile-image))
 					; ____________________
 					; Font-lock 
 ;;
@@ -363,6 +373,7 @@ This property tells that the current status is a reply to the user."
     (cons 'identica-check-is-seconds-ago ''identica-seconds-ago-dent-face)
     (cons 'identica-check-is-truncated ''identica-truncated-dent-face) 
     (list 'identica-check-is-is-a-reply 0 ''identica-is-a-reply-dent-face 'append)
+    (cons 'identica-check-is-profile-image ''identica-profile-image-dent-face) 
     ;;(cons 'identica-check-is-favored ''identica-favored-dent-face)
     )
   ;;

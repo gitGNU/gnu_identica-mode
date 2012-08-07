@@ -622,10 +622,17 @@ and `identica-process-http-buffer' function."
     (identica-set-mode-string nil identica-current-method (sn-account-server sn-current-account))
 
     (let ((inhibit-read-only t))
-      (erase-buffer)
-      (identica-render-timeline)
+      ;; I know that this is wrong, but if setted without loading the library nothing happens! :)
+      (setq identica-icon-finish-sentinel 'identica-refresh-timeline)
+      (setq identica-icon-finish-sentinel-parameters nil)
+      (identica-download-all-icons)
+      (identica-render-timeline nil t)
       (goto-char (point-min)))))
   
+(defun identica-refresh-timeline ()
+  "Erase and redraw the timeline."
+  (identica-render-timeline nil t)
+  (goto-char (point-min)))
 
 (defun identica-get-timeline (&optional method-class method parameters)
   "Update the current method-class, method and parameters and then visit that timeline.
