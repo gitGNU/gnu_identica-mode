@@ -34,7 +34,9 @@
 		    temporary-file-directory)
   "Where the images are stored temporary?")
 
-(defvar identica-icon-image-stack nil)
+(defvar identica-icon-image-stack nil
+
+  "Stack of images URL to download.")
 
 (defun identica-icon-image-type (file-name)
   "Return the type symbol depending on the extension."
@@ -48,39 +50,37 @@
   "Retrieve icons if icon-mode is active.
 
 The icons to retrieve must be stored in `identica-icon-image-stack'."
-  (if identica-icon-mode
-      (if (and identica-icon-image-stack window-system)
-	  (let ((proc
-		 (apply
-		  #'start-process
-		  "wget-images"
-		  nil
-		  "wget"
-		  (format "--directory-prefix=%s" identica-icon-tmp-images-dir)
-		  "--no-clobber"
-		  "--quiet"
-		  identica-icon-image-stack)))
-	    (set-process-sentinel
-	     proc
-	     (lambda (proc stat)
-	       (clear-image-cache)
-	       ))))))
+  (if (and identica-icon-image-stack window-system)
+      (let ((proc
+	     (apply
+	      #'start-process
+	      "wget-images"
+	      nil
+	      "wget"
+	      (format "--directory-prefix=%s" identica-icon-tmp-images-dir)
+	      "--no-clobber"
+	      "--no-directories"
+	      "--quiet"
+	      identica-icon-image-stack)))
+	(set-process-sentinel
+	 proc
+	 (lambda (proc stat)
+	   (clear-image-cache)
+	   )))))
 
-(defun idetica-icon-insert-image (profile-image-url)
+(defun identica-icon-insert-image (profile-image-url)
   "Insert the image given by the URL PROFILE-IMAGE-URL (if exists in the temporal dir) in the `current-buffer'.
 
 The image is supposed to be downloaded in the `identica-icon-tmp-images-dir'.
 
 If the image has been downloaded, then the function will return nil. Otherwise, return t."
-  (if (identica-icon-image-exists profile-image-url)
-      (when (and identica-icon-mode filename)
-	(let ((avatar (create-image (concat identica-icon-tmp-images-dir filename))))
-	  ;; Make sure the avatar is 48 pixels (which it should already be!, but hey...)
-	  ;; For offenders, the top left slice of 48 by 48 pixels is displayed
-	  ;; TODO: perhaps make this configurable?
-	  (insert-image avatar nil nil `(0 0 48 48)))
-	t)
-    nil)) 
+  (let ((filename (identica-icon-get-tmp-filename profile-image-url)))
+    (when filename
+      (let ((avatar (create-image (concat identica-icon-tmp-images-dir filename))))
+	;; Make sure the avatar is 48 pixels (which it should already be!, but hey...)
+	;; For offenders, the top left slice of 48 by 48 pixels is displayed
+	;; TODO: perhaps make this configurable?
+	(insert-image avatar nil nil `(0 0 48 48))))))
 
 (defun identica-icon-get-tmp-filename (profile-image-url)
   "Return only the filename if it exists in the temporary directory given by variable `identica-icon-tmp-images-dir'.
