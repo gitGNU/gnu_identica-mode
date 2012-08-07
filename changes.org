@@ -1,11 +1,44 @@
+#+TITLE:     changes.org
+#+AUTHOR:    Identica-mode.
+#+EMAIL:     
+#+DATE:      2012-08-07 mar
+#+DESCRIPTION: 
+#+KEYWORDS: 
+#+LANGUAGE:  en
+#+OPTIONS:   H:3 num:t toc:t \n:nil @:t ::t |:t ^:t -:t f:t *:t <:t
+#+OPTIONS:   TeX:t LaTeX:nil skip:nil d:nil todo:t pri:nil tags:not-in-toc
+#+INFOJS_OPT: view:nil toc:nil ltoc:t mouse:underline buttons:0 path:http://orgmode.org/org-info.js
+#+EXPORT_SELECT_TAGS: export
+#+EXPORT_EXCLUDE_TAGS: noexport
+#+LINK_UP:   
+#+LINK_HOME: 
+
 * Wich Version I changed?
 I have changed from commit 30ffd973a7cae9e7deae5a075e80f5827af3df2a. 
 
 Before that, the software has only one main library called =identica-mode.el=. 
 This library has almost 2000 lines of code with everything needed to start identica-mode.
-
 * Why I did these changes?
-** Modularization
+** Some important concepts
+*** Abstraction
+One of the main principles in software engineering is the abstraction. 
+Abstraction is a powerful concept that means that we have to take the relevant things and ignore details. 
+Alan Ghezzi, says: 
+"Abstraction is a process whereby we identify the important aspects of a phenomenon and ignore its details. Thus, abstraction is a special case of separation of concerns[...]"[AG-fse]
+
+Take a look that abstraction is a way for separating things dividing the real thing into differents representations.
+
+As you may observe [[*Modularization][Modularization]] is the next section, and the names tells you another type of separation of concerns.
+
+
+An example of an abstraction is the computer you are using: From inside, there are various electrical components joined together, these components are grouped into motherboard, hard-disk, keyboard, etc.
+The hard-disk complexity is *hidden* (and protected) inside a metal box, you only see a connector for plugin it in the motherboard(and maybe some little pins to configure it).
+
+So the abstraction "hiddes" the detailed information and let you see the relevant one: the connector of the hard-disk. 
+
+For the user, all this is detailed information is  hidden as well, and she/he only sees a keyboard, and a screen. That's because she/he wants to use the computer and not to ensamble it!
+
+*** Modularization
 The main purpose of these changes is to accomplish one software engineering principle: /modularization/.
 
 The main lema "divide and conquer" is what we must think when we create a software.
@@ -17,19 +50,86 @@ This principle is very important, for example:
 - is the justification of why exists lots of files ".el" for making a program.
 - is the justification of why we have to make lots of functions for making just one: the =(identica)= function.
 
+  
+*** Coupling and Cohesion
+Coupling is the interdependence of modules. High coupling means that each module has to use a lot of things of any other module. Low coupling means that a module doesn't use lots of things from another module.
 
-** Where is this? Where is that?
+Cohesion instead, measures the relation between things /inside/ the module. A high cohesion means that functions and variables are used between functions and variables inside the module. Low cohesion means that functions and variables are used poorly between other functions and variables inside the module.
+
+Ideally, the best is having low coupling and high cohesion. If we have high coupling, we'll have difficulties for understanding, modifying, testing r reusing each module.
+
+** The Cause and the Problem
+*** Where is this? Where is that?
 Another little problems that arise is when you try to find something. "Where is the function that print a dent in the buffer?" for example.
 
 Finding something in a big file is difficult, but finding in lots of files with correct names, is easier.
 
-** A bug somewhere... 
-Try to find bug and debuging becomes easier.
+*** A bug somewhere... 
+Try to find a bug and debuging becomes easier.
 
 If you have a problems, you will know wich module is the one is failing. So you just have to debug that one!
 
-** How easy is changing something
+In this case, in the scratch buffer, you can test the functions alone. If there is low coupling, the functions won't need to load to much things, so testing it alone should be possible.
+
+*** How easy is changing something
 A change in the interface will involve only the major mode! If everything is mixed, just for adding a new icon(or a whole new feature) will become a big task!
    1. Recognize what to change(which functions that already exists I have to read or change?)
    2. Change them and see what has changed(What doesn't work anymore?)
 
+
+* What to do now?
+If you want to develop, you should take a look at this tips: 
+
+- Keep everything in its place.
+  Being organized means to put in each module what it should, and to create new modules if you can't fit something in any of that modules.
+- Try to figure out where each function should be placed.
+  As before: Keep everything in its place.
+- Try to figure out where each function should be used.
+  When you use a function, take a look at the requires. Try to use as less external functions as possible. 
+- Don't do too much high [[*Coupling and Cohesion][coupling]] between modules!
+  Don't call to external functions or variables to much. If you need something very complex from other modules, create an external function.
+- Always try to think: "is right to put this here?"
+- Try to keep the actual design. 
+  If you want to change it, write it down please!
+- Try to separate the modules
+  In ELisp there is no visibility concept, you can access all functions from each modules. Try to think an interface API in each module, like "this is an internal function, this is an external function so developers of other modules can use it..."
+- Names are important:
+  Select carefully each name for module, function, variable and/or thing.
+- You shouldn't try to start a process for getting information(through HTTP for example) from a function that is in the interface library.
+  Each level should use a function from the inmediate inferior level!
+  /See [[*Current Design][Current Design section]] for more explanation about levels./
+
+And the most important:
+*Don't panic!* These are tips. If you make mistakes is because you are human! :) 
+
+Other humans will try to repair it.
+
+
+* Current Design
+  The current design involve three main parts(we can call them levels):
+  - Getting information(from Internet)
+  - Transformation
+  - Interface
+    
+  This three parts has subparts:
+  - Getting Information:
+    - identica-http.el
+    - identica-icon-mode.el
+  - Transformation:
+    - identica-translator.el
+  - Interface:
+    - identica-interface.el
+      - identica-major-mode.el
+      - identica-icon-mode.el
+    - identica-edit-buffer.el
+      - identica-edit-mode.el
+
+  A central library is the identica-commands.el, that provides relevant commands that start a process. For example: provides =identica-user-timeline= that start the getting information process, transform XML in lists, and shows the timeline.
+
+  There is a common library where you can find stuff that can be used by any module, this library is named identica-common-things.el.
+
+  identica-icon-mode.el is an exception because is a little library: provide functions for getting icons and inserting them in a buffer. We can say that is not a minor mode really, instead is an image cache management library.
+
+* Bibliography
+
+- [AG-fse] :: Ghezzi, Alan. "Fundamentals of Software Engineering". Prentice Hall.
