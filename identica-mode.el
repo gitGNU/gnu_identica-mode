@@ -104,7 +104,6 @@
 (require 'parse-time)
 (require 'longlines)
 (require 'json)
-(require 'image)
 (require 'identica-commands)
 (require 'identica-http)
 (require 'identica-translator)
@@ -219,21 +218,6 @@ of identica-stripe-face."
   "Return User-Agent header string."
   (funcall identica-user-agent-function))
 
-;;; to show image files
-
-(defvar identica-tmp-dir
-  (expand-file-name (concat "identicamode-images-" (user-login-name))
-		    temporary-file-directory))
-
-(defvar identica-image-stack nil)
-
-(defun identica-image-type (file-name)
-  (cond
-   ((string-match "\\.jpe?g" file-name) 'jpeg)
-   ((string-match "\\.png" file-name) 'png)
-   ((string-match "\\.gif" file-name) 'gif)
-   (t nil)))
-
 (defun identica-setftime (fmt string uni)
   (format-time-string fmt ; like "%Y-%m-%d %H:%M:%S"
 		      (apply 'encode-time (parse-time-string string))
@@ -347,26 +331,6 @@ prompt; \"Down\" counts down from (sn-account-textlimit sn-current-account); \"U
 
 (defun identica-finish-minibuffer ()
   (remove-hook 'post-command-hook 'identica-show-minibuffer-length t))
-
-(defun identica-get-icons ()
-  "Retrieve icons if icon-mode is active."
-  (if identica-icon-mode
-      (if (and identica-image-stack window-system)
-	  (let ((proc
-		 (apply
-		  #'start-process
-		  "wget-images"
-		  nil
-		  "wget"
-		  (format "--directory-prefix=%s" identica-tmp-dir)
-		  "--no-clobber"
-		  "--quiet"
-		  identica-image-stack)))
-	    (set-process-sentinel
-	     proc
-	     (lambda (proc stat)
-	       (clear-image-cache)
-	       ))))))
 
 (defun identica-mode-line-buffer-identification ()
   (if identica-active-mode

@@ -158,24 +158,6 @@ A filter is applied as a blacklist of dents."
 	(unless (identica-status-is-in-blacklist formated-status)
 	  (insert (identica-find-and-add-all-properties formated-status)))))))
   
-(defun identica-profile-image (profile-image-url)
-  (when (string-match "/\\([^/?]+\\)\\(?:\\?\\|$\\)" profile-image-url)
-    (let ((filename (match-string-no-properties 1 profile-image-url))
-	  (xfilename (match-string-no-properties 0 profile-image-url)))
-      ;; download icons if does not exist
-      (unless (file-exists-p (concat identica-tmp-dir filename))
-	(if (file-exists-p (concat identica-tmp-dir xfilename))
-	    (setq filename xfilename)
-	  (setq filename nil)
-	  (add-to-list 'identica-image-stack profile-image-url)))
-      (when (and identica-icon-mode filename)
-	(let ((avatar (create-image (concat identica-tmp-dir filename))))
-	  ;; Make sure the avatar is 48 pixels (which it should already be!, but hey...)
-	  ;; For offenders, the top left slice of 48 by 48 pixels is displayed
-	  ;; TODO: perhaps make this configurable?
-	  (insert-image avatar nil nil `(0 0 48 48)))
-	nil))))
-
 (defun identica-format-status (status format-str)
   "Create a string with information from STATUS formatted acording to FORMAT-STR. 
 
