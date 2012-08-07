@@ -82,6 +82,14 @@ If the image has been downloaded, then the function will return nil. Otherwise, 
 	;; TODO: perhaps make this configurable?
 	(insert-image avatar nil nil `(0 0 48 48))))))
 
+(defun identica-icon-get-image-string (profile-image-url)
+  "Return a string with the image, this image has been inserted as a property."
+    (let ((filename (identica-icon-get-tmp-filename profile-image-url)))
+    (when filename
+      (propertize " " 'display (cons 'image 
+				     (list :type 'png :file filename))))))
+
+
 (defun identica-icon-get-tmp-filename (profile-image-url)
   "Return only the filename if it exists in the temporary directory given by variable `identica-icon-tmp-images-dir'.
 
@@ -91,9 +99,9 @@ If the file doesn't exists, the return nil."
 	(xfilename (match-string-no-properties 0 profile-image-url)))
     (cond
      ((file-exists-p (concat identica-icon-tmp-images-dir filename))
-      filename)
+      (concat identica-icon-tmp-images-dir filename))
      ((file-exists-p (concat identica-icon-tmp-images-dir xfilename))
-      xfilename)
+      (concat identica-icon-tmp-images-dir xfilename))
      (t nil))))
 
 (defun identica-icon-set-for-download (profile-image-url)
