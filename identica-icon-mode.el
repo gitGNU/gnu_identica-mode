@@ -39,12 +39,15 @@
   "Stack of images URL to download.")
 
 (defun identica-icon-image-type (file-name)
-  "Return the type symbol depending on the extension."
-  (cond
-   ((string-match "\\.jpe?g" file-name) 'jpeg)
-   ((string-match "\\.png" file-name) 'png)
-   ((string-match "\\.gif" file-name) 'gif)
-   (t nil)))
+  "Return the type symbol depending on the extension.
+
+Please, don't use the file extension, in identica some avatars has PNG extensions but they are in JPG format!"
+  ;; (cond
+  ;;  ((string-match "\\.jpe?g" file-name) 'jpeg)
+  ;;  ((string-match "\\.png" file-name) 'png)
+  ;;  ((string-match "\\.gif" file-name) 'gif)
+  ;;  (t nil)))
+  (image-type file-name))
 
 (defun identica-icon-get-icons (&optional overide)
   "Retrieve icons if icon-mode is active.
