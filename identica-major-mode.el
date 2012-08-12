@@ -357,15 +357,32 @@ This property tells that the current status is a reply to the user."
   "Return t if the text from the current point up to the limit has the property is-a-reply setted to t.
 
 This property tells that the current status is a reply to the user."
-  (unless (member 'identica-is-a-reply-dent-face 
-		  (get-text-property (point) 'face))
-    (identica-check-is-property limit 'is-a-reply)))
+  (save-excursion
+    (let ((end (identica-find-end-of-face 'identica-is-a-reply-dent-face limit)))
+      (if (< end limit)
+	  (progn
+	    (goto-char end)
+	    (identica-check-is-property limit 'is-a-reply))
+	nil))))
   
+
+(defun identica-find-end-of-face (face &optional limit)
+  "Return the final position where the given FACE is applied starting from current `point'.
+
+If LIMIT is supplied, the look up to that limit."
+  (or limit (setq limit (point-max)))
+  (save-excursion
+    (while (and (< (point) limit)
+		(member face (get-text-property (point) 'face)))
+      (forward-char))
+    (point)))
 
 
 (defun identica-check-is-profile-image (limit)  
   "Return t if the text from the current point up to the limit has the property profile-image setted to t."
   (identica-check-is-property limit 'profile-image))
+
+
 					; ____________________
 					; Font-lock 
 ;;
