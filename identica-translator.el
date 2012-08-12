@@ -93,10 +93,12 @@ If non-nil, dents over this amount will bre removed.")
 		 (identica-set-mode-string "pending" identica-method (sn-account-server sn-current-account)))))))))
 
 
-(defun identica-process-http-buffer ()
+(defun identica-process-http-buffer (&optional output-variable)
   "Process de HTTP contents of the `current-buffer' and add everything to the cache.
 
-The cache will *not* be cleared!"
+The cache will *not* be cleared!
+
+If OUTPUT-VARIABLE is absent or nil, then use `identica-timeline-data'."
   (let ((body (identica-get-response-body)))
     (unless (not body)
       (setq identica-new-dents-count
