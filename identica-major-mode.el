@@ -124,6 +124,10 @@ paragraphs. Instead, use visual-line-mode or longlines-mode if
       (define-key km "t" 'identica-toggle-proxy)
       (define-key km "\C-k" 'identica-delete-notice)
       (define-key km "\C-c\C-p" 'identica-toggle-proxy)
+      (define-key km [down] 'identica-goto-next-status)
+      (define-key km [up] 'identica-goto-previous-status)
+      (define-key km "\C-n" 'identica-goto-next-status)
+      (define-key km "\C-p" 'identica-goto-previous-status)
       nil))
 
 (defvar identica-mode-hook nil
@@ -349,6 +353,16 @@ Create a new function like `identica-check-is-message-separator' so you can use 
 This property tells that the current status is a reply to the user."
   (identica-check-is-property limit 'is-a-reply))
 
+(defun identica-check-is-is-a-reply-and-not-faced (limit)  
+  "Return t if the text from the current point up to the limit has the property is-a-reply setted to t.
+
+This property tells that the current status is a reply to the user."
+  (unless (member 'identica-is-a-reply-dent-face 
+		  (get-text-property (point) 'face))
+    (identica-check-is-property limit 'is-a-reply)))
+  
+
+
 (defun identica-check-is-profile-image (limit)  
   "Return t if the text from the current point up to the limit has the property profile-image setted to t."
   (identica-check-is-property limit 'profile-image))
@@ -372,7 +386,7 @@ This property tells that the current status is a reply to the user."
     (cons 'identica-check-is-created-at ''identica-created-at-dent-face)
     (cons 'identica-check-is-seconds-ago ''identica-seconds-ago-dent-face)
     (cons 'identica-check-is-truncated ''identica-truncated-dent-face) 
-    (list 'identica-check-is-is-a-reply 0 ''identica-is-a-reply-dent-face 'append)
+    (list 'identica-check-is-is-a-reply-and-not-faced 0 ''identica-is-a-reply-dent-face 'append)
     (cons 'identica-check-is-profile-image ''identica-profile-image-dent-face) 
     ;;(cons 'identica-check-is-favored ''identica-favored-dent-face)
     )
@@ -518,7 +532,7 @@ static char * statusnet_off_xpm[] = {
   (interactive "P")
   (let ((prop))
     (catch 'not-found
-      (while (and pos (not (memq-face identica-username-face prop)))
+      (while (and pos (not (memq-face 'identica-username-dent-face prop)))
 	(setq pos (next-single-property-change pos 'face object))
 	(when (eq pos nil) (throw 'not-found nil))
 	(setq prop (get-text-property pos 'face object)))
@@ -529,7 +543,7 @@ static char * statusnet_off_xpm[] = {
   (interactive)
   (let ((prop))
     (catch 'not-found
-      (while (and pos (not (memq-face identica-username-face prop)))
+      (while (and pos (not (memq-face 'identica-username-dent-face prop)))
 	(setq pos (previous-single-property-change pos 'face object))
 	(when (eq pos nil) (throw 'not-found nil))
 	(setq prop (get-text-property pos 'face object)))

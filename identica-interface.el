@@ -183,10 +183,10 @@ If no image is at current point, do nothing."
   "Render all the timeline getting all the information from `identica-timeline-data'.
 
 BUFFER is the buffer where insert all the information.
-If BUFFER is nil or not present, use the `current-buffer'.
+If BUFFER is nil or not present, use the `identica-buffer'.
 
 A filter is applied as a blacklist of dents."
-  (or buffer (setq buffer (current-buffer)))
+  (or buffer (setq buffer identica-buffer))
   (with-current-buffer buffer
     (let ((inhibit-read-only t))
       (when clean-first 

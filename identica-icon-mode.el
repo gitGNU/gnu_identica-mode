@@ -47,7 +47,7 @@ Please, don't use the file extension, in identica some avatars has PNG extension
   ;;  ((string-match "\\.png" file-name) 'png)
   ;;  ((string-match "\\.gif" file-name) 'gif)
   ;;  (t nil)))
-  (image-type file-name))
+  (image-type-from-file-header file-name))
 
 (defun identica-icon-get-icons (&optional overide)
   "Retrieve icons if icon-mode is active.
