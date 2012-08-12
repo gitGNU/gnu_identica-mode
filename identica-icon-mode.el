@@ -46,10 +46,12 @@
    ((string-match "\\.gif" file-name) 'gif)
    (t nil)))
 
-(defun identica-icon-get-icons ()
+(defun identica-icon-get-icons (&optional overide)
   "Retrieve icons if icon-mode is active.
 
-The icons to retrieve must be stored in `identica-icon-image-stack'."
+The icons to retrieve must be stored in `identica-icon-image-stack'.
+
+If OVERIDE is t then download no matter if it was downloaded before."
   (if (and identica-icon-image-stack window-system)
       (let ((proc
 	     (apply
@@ -58,7 +60,9 @@ The icons to retrieve must be stored in `identica-icon-image-stack'."
 	      nil
 	      "wget"
 	      (format "--directory-prefix=%s" identica-icon-tmp-images-dir)
-	      "--no-clobber"
+	      (if overide 
+		  "" 
+		"--no-clobber")
 	      "--no-directories"
 	      "--quiet"
 	      identica-icon-image-stack)))
@@ -118,9 +122,12 @@ If NO-CHECK if t then, don't check if the temporary filename exists."
       (concat identica-icon-tmp-images-dir xfilename))
      (t nil))))
 
-(defun identica-icon-set-for-download (profile-image-url)
-  "Mark the PROFILE-IMAGE-URL for downloading if the image hasn't been downloaded before."
-  (unless (identica-icon-get-tmp-filename profile-image-url)
+(defun identica-icon-set-for-download (profile-image-url &optional overide)
+  "Mark the PROFILE-IMAGE-URL for downloading if the image hasn't been downloaded before.
+
+If OVERIDE is t, then insert it in the image stack no matter if it was downloaded."
+  (unless (and (not overide)
+	       (identica-icon-get-tmp-filename profile-image-url))
     (add-to-list 'identica-icon-image-stack profile-image-url)))
 
 (provide 'identica-icon-mode)

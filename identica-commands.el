@@ -686,4 +686,9 @@ If any of them is not nil, then update the identica-current-? value.
 
 ;; TODO: Commands for retrieving older dents.
 
+(defun identica-get-image-at-point ()
+  "Get the image at current point, if image was downloaded, download again."
+  (interactive)
+  (identica-refresh-icon-at-point))
+
 (provide 'identica-commands)

@@ -157,6 +157,28 @@ Only will be marked for download those icons that aren't in the temporary direct
   (identica-mark-all-icons-for-download)
   (identica-icon-get-icons))
 
+(defun identica-refresh-icon-at-point ()
+  "Download the icon of the image at current point, if it was downloaded, download again.
+Insert the recently downloaded icon at position replacing the old one.
+
+If no image is at current point, do nothing."
+  (let ((url (identica-get-text-value-profile-image))
+	(inhibit-read-only t))
+    (when url
+      ;; Set everything for download the icon.
+      (setq identica-icon-finish-sentinel 'identica-replace-image-at-point-2)
+      (setq identica-icon-finish-sentinel-parameters (list url (point)))
+      (identica-icon-set-for-download url t)
+      (identica-icon-get-icons t))))         
+  
+(defun identica-replace-image-at-point-2 (url position)
+  "Replace the image at POSITION. The image must be downloaded."
+  (save-excursion
+    (let ((inhibit-read-only t))
+      (goto-char position)
+      (delete-char 1)
+      (insert (identica-format-profile-image url)))))
+
 (defun identica-render-timeline (&optional buffer clean-first)
   "Render all the timeline getting all the information from `identica-timeline-data'.
 
@@ -277,7 +299,8 @@ STATUS must be a status data, one element taken from the result of `identica-tim
 
 (defun identica-format-profile-image (url)
   (propertize (identica-icon-get-image-string url)
-	      'profile-image t))
+	      'profile-image t
+	      'profile-image-url url))
 
 (defun identica-format-user-name (name)
   "How the user-name will be formated?"
@@ -519,5 +542,8 @@ If POSITION is given, search if that property is in that place."
   "Return the text value of the property conversation-id at current `point'."
   (identica-get-text-value 'uri))
 
+(defun identica-get-text-value-profile-image ()
+  "Return the text value of the property conversation-id at current `point'."
+  (identica-get-text-value 'profile-image-url))
 
 (provide 'identica-interface)
