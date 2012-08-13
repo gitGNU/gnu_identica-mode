@@ -62,6 +62,6 @@ For use as a predicate for sort."
   "Regexp for the favored heart char.")
 
 (defconst identica-redent-regexp "[♺♻]"
-  "Regexp for the redent heart char.")
+  "Regexp for the redent recycle char.")
 
 (provide 'identica-common-things)
