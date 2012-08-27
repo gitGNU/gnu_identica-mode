@@ -1,0 +1,15 @@
+
+** TODO Tagface and groupface has no colors! 
+   Too boring without a nice color! :P
+
+   Take a look that when you edit, they has a nice beutiful color :)
+** TODO Button for old status
+   Place a button or something to go to the next (olders) status at the current timeline!
+
+** TODO Identica-friends module doesn't work
+   Make it work! I don't even know if I follow some people!!! 
+
+** TODO Timer doesn't work
+** TODO Make a function to retrieve user/group information
+   Sometimes is necessary to retrieve user information to know who is she/he.
+

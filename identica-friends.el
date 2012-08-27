@@ -66,6 +66,7 @@
 
 (require 'xml)
 (require 'identica-mode)
+(require 'identica-http)
 
 					; ____________________
 					;
@@ -306,9 +307,8 @@ if not call `identica-friends-goto-group-timeline-at-point'."
 (defun identica-show-followers()
   (interactive)
   (setq identica-friends-buffer-type 'users)
-  (identica-http-get (sn-account-server sn-current-account)
-		     (sn-account-auth-mode sn-current-account)
-		     "statuses" "followers" nil 'identica-friends-show-user-sentinel '("follower"))    
+  (setq identica-http-get-sentinel 'identica-friends-show-user-sentinel)
+  (identica-http-get "statuses" "followers" nil nil '("follower"))    
   (run-hooks 'identica-friends-show-followers-hooks)
   )
 
@@ -325,9 +325,8 @@ if not call `identica-friends-goto-group-timeline-at-point'."
 ;  (setq identica-method "friends")
 ;  (identica-http-get identica-method-class identica-method identica-show-friend-sentinel)
   (setq identica-friends-buffer-type 'users)
-  (identica-http-get (sn-account-server sn-current-account) ;; server
-		     (sn-account-auth-mode sn-current-account);; auth-mode
-		     "statuses" "friends" nil 'identica-friends-show-user-sentinel '("friend"))
+  (setq identica-http-get-sentinel 'identica-friends-show-user-sentinel)
+  (identica-http-get "statuses" "friends" nil nil '("friend"))
   (run-hooks 'identica-friends-show-friends-hooks)
   )
 
@@ -337,9 +336,8 @@ if not call `identica-friends-goto-group-timeline-at-point'."
 ;;  (setq identica-method "friends")
 ;;  (identica-http-get identica-method-class identica-method identica-show-friend-sentinel)
   (setq identica-friends-buffer-type 'groups)
-  (identica-http-get (sn-account-server sn-current-account) ;; server
-		     (sn-account-auth-mode sn-current-account);; auth-mode
-		     "statusnet" "groups/list" nil 'identica-friends-show-user-sentinel '("group"))
+  (setq identica-http-get-sentinel 'identica-friends-show-user-sentinel)
+  (identica-http-get "statusnet" "groups/list" nil nil '("group"))
   ;;(run-hooks 'identica-friends-show-groups-hooks)
   )
 
@@ -435,7 +433,7 @@ If there are no user, return nil."
   )
 
 (defun identica-friends-show-user-sentinel
-  (&optional status method-class method parameters type-of-user)
+  (&optional method-class method parameters type-of-user)
   "Sentinel executed after recieving all the information from identi.ca.
 This sentinel needs to know if the TYPE-OF-USER(or type of list) is one of these:
 - \"friend\"
