@@ -15,7 +15,7 @@
     ;; You should have received a copy of the GNU General Public License
     ;; along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-    ;; Miércoles 25 De Julio Del 2012    
+    ;; Miércoles 25 De Julio Del 2012
 
 
 ;; PURPOSE:
@@ -51,7 +51,7 @@ For use as a predicate for sort."
 
 (defconst identica-group-name-regexp "!\\([_[:word:]0-9\-]+\\)"
   "Regexp for group-names.")
-  
+
 (defconst identica-tag-name-regexp "#\\([_[:word:]0-9\-]+\\)"
   "Regexp for tag-names.")
 
@@ -62,6 +62,6 @@ For use as a predicate for sort."
   "Regexp for the favored heart char.")
 
 (defconst identica-redent-regexp "[♺♻]"
-  "Regexp for the redent heart char.")
+  "Regexp for the redent recycle char.")
 
 (provide 'identica-common-things)
