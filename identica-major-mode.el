@@ -182,14 +182,17 @@ paragraphs. Instead, use visual-line-mode or longlines-mode if
 (defface identica-username-face
   `((t nil)) "" :group 'identica-mode-faces)
 (set-face-attribute 'identica-username-face nil :underline t)
+(set-face-attribute 'identica-username-face nil :foreground "OliveDrab3")
 
 (defface identica-groupname-face
   `((t nil)) "" :group 'identica-mode-faces)
 (set-face-attribute 'identica-groupname-face nil :underline t)
+(set-face-attribute 'identica-groupname-face nil :foreground "aquamarine")
 
 (defface identica-tagname-face
   `((t nil)) "" :group 'identica-mode-faces)
 (set-face-attribute 'identica-tagname-face nil :underline t)
+(set-face-attribute 'identica-tagname-face nil :foreground "light coral")
 
 (defface identica-reply-face
   `((t nil)) "" :group 'identica-mode-faces)
