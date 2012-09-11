@@ -275,7 +275,7 @@ STATUS must be a status data, one element taken from the result of `identica-tim
        (identica-format-seconds-ago (attr 'created-at)))
       ((?t)                        ; %t - text
 					;(clickable-text)
-	(attr 'text))
+	(identica-format-text (attr 'text)))
       ((?')                         ; %' - truncated
        (identica-format-truncated (attr 'truncated)))
       ((?f)                         ; %f - source
@@ -401,6 +401,10 @@ STATUS must be a status data, one element taken from the result of `identica-tim
   (when (string= "true" likes)
     (propertize "❤" 
 		'favored t)))
+
+(defun identica-format-text (text)
+  "How the text will be formated?"
+  (replace-regexp-in-string "^[[:space:]]*RT[[:space:]]" "♻ " text))
 
 ;;--------------------
 
